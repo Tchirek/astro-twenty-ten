@@ -45,4 +45,4 @@ All bundled posts and identities are fictional demo data. The bundled header ima
 
 ## License
 
-AGPL-3.0-or-later. Modified versions offered over a network must make their corresponding source available to users. The visual design is inspired by the WordPress Twenty Ten theme, originally distributed under the GNU General Public License.
+AGPL-3.0-only. Modified versions offered over a network must make their corresponding source available to users. The visual design is inspired by the WordPress Twenty Ten theme, originally distributed under the GNU General Public License.
