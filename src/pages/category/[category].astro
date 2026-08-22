@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import PostList from '../../components/PostList.astro';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { published, slugify, sortPosts } from '../../lib/blog';
+
+export async function getStaticPaths() {
+  const posts = sortPosts((await getCollection('blog')).filter(published));
+  const names = [...new Set(posts.flatMap((post) => post.data.categories))];
+
+  return names.map((name) => ({
+    params: { category: slugify(name) },
+    props: { name, posts: posts.filter((post) => post.data.categories.includes(name)) },
+  }));
+}
+
+const { name, posts } = Astro.props;
+---
+
+<SiteLayout title={`Category: ${name}`} description={`Posts filed under ${name}.`}>
+  <PostList posts={posts} heading={`Category Archives: ${name}`} />
+</SiteLayout>

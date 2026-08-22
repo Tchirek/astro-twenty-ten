@@ -1,0 +1,39 @@
+---
+title: "Twenty Ten, Still Quietly Good"
+description: "Keeping a 2010 visual language while replacing the machinery underneath."
+slug: "twenty-ten-on-astro"
+date: 2026-08-23T08:00:00Z
+author: "Demo Author"
+categories:
+  - Programming
+  - Web
+tags:
+  - Astro
+  - Markdown
+  - Twenty Ten
+legacyUrl: "/2026/08/23/twenty-ten-on-astro/"
+---
+
+Twenty Ten never asked the interface to compete with the writing. A large name, one landscape, a black navigation bar, a readable column, and a practical sidebar were enough.
+
+## What stayed
+
+The fixed desktop measure, serif body text, post metadata, category archive, and older/newer navigation all remain. These are not nostalgic decorations; they make a chronological site legible.
+
+## What changed
+
+The rendering path is now pleasantly short:
+
+```text
+Markdown → Astro → HTML + CSS
+```
+
+There is no database query between a reader and a paragraph. Dark mode respects the operating system, code blocks are highlighted at build time, and the layout collapses cleanly on a phone.
+
+### JavaScript with a job
+
+The small client script has three jobs: remember a color preference, copy code, and focus search with <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd>. Everything else is a link or a stylesheet.
+
+## The useful constraint
+
+The goal is not to make an old theme impersonate a software dashboard. It is to imagine that the theme kept receiving careful maintenance without forgetting why people liked it.

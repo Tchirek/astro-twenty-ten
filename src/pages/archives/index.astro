@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { formatDate, formatMonth, monthKey, postPath, published, sortPosts } from '../../lib/blog';
+
+const posts = sortPosts((await getCollection('blog')).filter(published));
+const groups = new Map<string, typeof posts>();
+for (const post of posts) {
+  const key = monthKey(post.data.date);
+  groups.set(key, [...(groups.get(key) ?? []), post]);
+}
+---
+
+<SiteLayout title="Archives" description="Browse every post by month.">
+  <h1 class="page-title">Archives</h1>
+  {[...groups.entries()].map(([key, monthPosts]) => (
+    <section class="archive-group" id={key}>
+      <h2>{formatMonth(monthPosts[0].data.date)}</h2>
+      <ul class="archive-list">
+        {monthPosts.map((post) => (
+          <li>
+            <time class="archive-date" datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time><br />
+            <a href={postPath(post)}>{post.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</SiteLayout>

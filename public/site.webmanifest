@@ -1,0 +1,11 @@
+{
+  "name": "Twenty Ten Notes",
+  "short_name": "Twenty Ten",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f1f1",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

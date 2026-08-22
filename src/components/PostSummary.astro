@@ -1,0 +1,35 @@
+---
+import type { BlogPost } from '../lib/blog';
+import { formatDate, postPath, slugify } from '../lib/blog';
+
+interface Props {
+  post: BlogPost;
+}
+
+const { post } = Astro.props;
+const url = postPath(post);
+---
+
+<article class="post-summary">
+  <header>
+    <h2><a href={url}>{post.data.title}</a></h2>
+    <p class="post-meta">
+      Posted on <a href={url}><time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time></a>
+      <span class="meta-separator">by</span> {post.data.author}
+    </p>
+  </header>
+  <p>{post.data.description}</p>
+  <p><a class="continue-reading" href={url}>Continue reading <span aria-hidden="true">→</span></a></p>
+  <footer class="entry-utility">
+    {post.data.categories.length > 0 && (
+      <span>Posted in {post.data.categories.map((category, index) => (
+        <><a href={`/category/${slugify(category)}/`}>{category}</a>{index < post.data.categories.length - 1 ? ', ' : ''}</>
+      ))}</span>
+    )}
+    {post.data.tags.length > 0 && (
+      <span> · Tagged {post.data.tags.map((tag, index) => (
+        <><a href={`/tag/${slugify(tag)}/`}>{tag}</a>{index < post.data.tags.length - 1 ? ', ' : ''}</>
+      ))}</span>
+    )}
+  </footer>
+</article>

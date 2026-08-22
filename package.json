@@ -1,0 +1,28 @@
+{
+  "name": "astro-twenty-ten",
+  "version": "0.1.0",
+  "description": "A static Astro recreation of the classic WordPress Twenty Ten blog theme.",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "check": "astro check",
+    "preview": "astro preview",
+    "test": "node --test src/lib/blog.test.ts"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.7",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3"
+  }
+}

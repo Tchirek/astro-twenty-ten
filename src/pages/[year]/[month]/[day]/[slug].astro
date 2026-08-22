@@ -1,0 +1,82 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { BlogPost } from '../../../../lib/blog';
+import SiteLayout from '../../../../layouts/SiteLayout.astro';
+import { formatDate, postPath, published, readingMinutes, slugify, sortPosts } from '../../../../lib/blog';
+
+export async function getStaticPaths() {
+  const posts = sortPosts((await getCollection('blog')).filter(published));
+
+  return posts.map((post) => {
+    const [year, month, day, slug] = postPath(post).split('/').filter(Boolean);
+    return { params: { year, month, day, slug }, props: { post, posts } };
+  });
+}
+
+interface Props {
+  post: BlogPost;
+  posts: BlogPost[];
+}
+
+const { post, posts } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const index = posts.findIndex((entry) => entry.id === post.id);
+const newer = index > 0 ? posts[index - 1] : undefined;
+const older = index < posts.length - 1 ? posts[index + 1] : undefined;
+const minutes = readingMinutes(post.body ?? '');
+---
+
+<SiteLayout
+  title={post.data.title}
+  description={post.data.description}
+  canonical={post.data.canonical}
+  image={post.data.featuredImage}
+  type="article"
+  publishedTime={post.data.date}
+  updatedTime={post.data.updated}
+>
+  <article>
+    <header>
+      <h1 class="post-title">{post.data.title}</h1>
+      <p class="post-meta">
+        Posted on <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+        <span class="meta-separator">by</span> {post.data.author} · {minutes} min read
+        {post.data.updated && <> · Updated <time datetime={post.data.updated.toISOString()}>{formatDate(post.data.updated)}</time></>}
+      </p>
+    </header>
+
+    {toc.length > 1 && (
+      <nav class="table-of-contents" aria-labelledby="toc-title">
+        <h2 id="toc-title">Contents</h2>
+        <ol>
+          {toc.map((heading) => <li data-depth={heading.depth}><a href={`#${heading.slug}`}>{heading.text}</a></li>)}
+        </ol>
+      </nav>
+    )}
+
+    <div class="post-content">
+      <Content />
+    </div>
+
+    <footer class="entry-utility">
+      {post.data.categories.length > 0 && (
+        <span>Posted in {post.data.categories.map((category, itemIndex) => (
+          <><a href={`/category/${slugify(category)}/`}>{category}</a>{itemIndex < post.data.categories.length - 1 ? ', ' : ''}</>
+        ))}</span>
+      )}
+      {post.data.tags.length > 0 && (
+        <span> · Tagged {post.data.tags.map((tag, itemIndex) => (
+          <><a href={`/tag/${slugify(tag)}/`}>{tag}</a>{itemIndex < post.data.tags.length - 1 ? ', ' : ''}</>
+        ))}</span>
+      )}
+    </footer>
+  </article>
+
+  {(older || newer) && (
+    <nav class="post-navigation" aria-label="Adjacent posts">
+      {newer && <a href={postPath(newer)}>← Newer: {newer.data.title}</a>}
+      {older && <a href={postPath(older)}>Older: {older.data.title} →</a>}
+    </nav>
+  )}
+</SiteLayout>
