@@ -29,7 +29,7 @@
   --visited: #c9a5f2;
   --link-hover: #ff9c89;
   --nav: #000;
-  --nav-text: #bbb;
+  --nav-text: #aaa;
   --field: #202420;
   --soft: #242824;
 }
@@ -48,7 +48,7 @@
     --visited: #c9a5f2;
     --link-hover: #ff9c89;
     --nav: #000;
-    --nav-text: #bbb;
+    --nav-text: #aaa;
     --field: #202420;
     --soft: #242824;
   }
@@ -218,12 +218,19 @@ input {
 }
 
 .primary-nav a:hover,
-.primary-nav a:focus-visible,
-.primary-nav a[aria-current='page'],
 .theme-toggle:hover,
 .theme-toggle:focus-visible {
   background: #333;
   color: #fff;
+}
+
+.primary-nav a[aria-current='page'] {
+  color: #fff;
+}
+
+.primary-nav a:focus-visible {
+  outline: auto;
+  outline-offset: 0;
 }
 
 .page-grid {

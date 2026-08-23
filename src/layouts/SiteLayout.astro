@@ -1,5 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import headerSource from '../assets/header-demo.png';
 import { formatMonth, monthKey, postPath, published, slugify, sortPosts } from '../lib/blog';
 import '../styles/global.css';
 
@@ -14,11 +16,22 @@ interface Props {
   noSidebar?: boolean;
 }
 
+const header = await getImage({
+  src: headerSource,
+  width: 940,
+  height: 198,
+  fit: 'cover',
+  position: 'center',
+  format: 'webp',
+  priority: true,
+  alt: '',
+});
+
 const {
   title,
   description = 'Notes on software, systems, and the small things learned along the way.',
   canonical,
-  image = '/header-demo.png',
+  image = header.src,
   type = 'website',
   publishedTime,
   updatedTime,
@@ -79,6 +92,7 @@ const schema = type === 'article'
     <link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href="/rss.xml" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preload" as="image" href={header.src} type="image/webp" fetchpriority="high" />
     <meta property="og:type" content={type} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
@@ -104,7 +118,7 @@ const schema = type === 'article'
           <a class="site-title" href="/">{siteName}</a>
           <p class="site-description">Notes, links, and small experiments.</p>
         </div>
-        <img class="header-art" src="/header-demo.png" width="940" height="198" alt="" />
+        <img src={header.src} {...header.attributes} class="header-art" />
         <nav class="primary-nav" aria-label="Primary navigation">
           <div class="nav-links">
             <a href="/" aria-current={path === '/' ? 'page' : undefined}>主頁</a>
