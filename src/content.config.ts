@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import siteConfig from '../site.config.ts';
 
 const blog = defineCollection({
   loader: glob({
@@ -13,12 +14,12 @@ const blog = defineCollection({
     slug: z.string(),
     date: z.coerce.date(),
     updated: z.coerce.date().optional(),
-    author: z.string().default('Demo Author'),
+    author: z.string().default(siteConfig.author.name),
     categories: z.array(z.string()).default([]),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     featuredImage: z.string().optional(),
-    legacyUrl: z.string().regex(/^\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/).optional(),
+    permalink: z.string().regex(/^\/(?:[^/?#]+\/)+$/).optional(),
     canonical: z.url().optional(),
   }),
 });

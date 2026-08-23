@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import { formatMonth, monthKey, postPath, published, slugify, sortPosts } from '../lib/blog';
+import siteConfig from '../../site.config.ts';
 
 const posts = sortPosts((await getCollection('blog')).filter(published));
 const recent = posts.slice(0, 5);
@@ -19,14 +20,14 @@ for (const post of posts) {
 ---
 
 <aside class="sidebar" aria-label="Blog sidebar">
-  <section class="widget">
+  {siteConfig.features.search && <section class="widget">
     <h2>Search</h2>
     <form class="search-form" action="/search/" method="get" role="search">
       <label class="screen-reader-text" for="site-search">Search this site</label>
       <input id="site-search" data-site-search name="q" type="search" placeholder="Search..." autocomplete="off" />
       <button type="submit">Search</button>
     </form>
-  </section>
+  </section>}
 
   <section class="widget">
     <h2>Recent Posts</h2>

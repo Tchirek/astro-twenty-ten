@@ -5,6 +5,7 @@ import BaseHead from '../components/BaseHead.astro';
 import BrowserEnhancements from '../components/BrowserEnhancements.astro';
 import Sidebar from '../components/Sidebar.astro';
 import '../styles/global.css';
+import siteConfig from '../../site.config.ts';
 
 interface Props {
   title?: string;
@@ -29,14 +30,14 @@ const header = await getImage({
 });
 
 const { noSidebar = false, ...headProps } = Astro.props;
-const siteName = 'Twenty Ten Notes';
-const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const path = Astro.url.pathname;
+const activePath = (href: string) => href === '/' ? path === '/' : path.startsWith(href);
 ---
 
 <!doctype html>
-<html lang="en" transition:animate="none">
+<html lang={siteConfig.language}>
   <head>
-    <BaseHead {...headProps} siteName={siteName} headerImage={header.src} />
+    <BaseHead {...headProps} headerImage={header.src} />
     <BrowserEnhancements />
   </head>
   <body id="top">
@@ -44,8 +45,8 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
     <div class="site-shell">
       <header class="site-header">
         <div class="branding">
-          <a class="site-title" href="/">{siteName}</a>
-          <p class="site-description">Notes, links, and small experiments.</p>
+          <a class="site-title" href="/">{siteConfig.title}</a>
+          <p class="site-description">{siteConfig.description}</p>
         </div>
         <img
           src={header.src}
@@ -55,12 +56,12 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
         />
         <nav class="primary-nav" aria-label="Primary navigation">
           <div class="nav-links">
-            <a href="/" aria-current={path === '/' ? 'page' : undefined}>主頁</a>
-            <a href="/about/" aria-current={path === '/about' ? 'page' : undefined}>About Me</a>
-            <a href="/archives/" aria-current={path.startsWith('/archives') ? 'page' : undefined}>Archives</a>
+            {siteConfig.navigation.map((item) => (
+              <a href={item.href} aria-current={activePath(item.href) ? 'page' : undefined}>{item.label}</a>
+            ))}
           </div>
           <div class="nav-tools">
-            <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">☾</button>
+            {siteConfig.appearance.darkMode && <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">☾</button>}
           </div>
         </nav>
       </header>
@@ -74,8 +75,8 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
       </div>
 
       <footer class="site-footer">
-        <p><a href="/">{siteName}</a></p>
-        <p>Proudly powered by <a href="https://astro.build/">Astro</a>.</p>
+        <p><a href="/">{siteConfig.title}</a></p>
+        <p>{siteConfig.footer.prefix} <a href={siteConfig.footer.href}>{siteConfig.footer.label}</a>.</p>
       </footer>
     </div>
   </body>

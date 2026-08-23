@@ -12,6 +12,7 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "check": "astro check",
+    "lint": "astro check",
     "preview": "astro preview",
     "test": "node --test src/lib/blog.test.ts"
   },

@@ -1,8 +1,7 @@
 import type { CollectionEntry } from 'astro:content';
+import siteConfig from '../../site.config.ts';
 
 export type BlogPost = CollectionEntry<'blog'>;
-
-export const POSTS_PER_PAGE = 5;
 
 export const published = (post: BlogPost) => !post.data.draft;
 
@@ -17,14 +16,23 @@ export function slugify(value: string) {
     .replace(/\+/g, ' plus ')
     .replace(/#/g, ' sharp ')
     .replace(/&/g, ' and ')
-    .toLocaleLowerCase('en')
+    .toLocaleLowerCase(siteConfig.language)
     .trim()
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '');
 }
 
-export function postPath(post: BlogPost) {
-  if (post.data.legacyUrl) return post.data.legacyUrl;
+interface PostRoute {
+  id?: string;
+  data: {
+    date: Date;
+    permalink?: string;
+    slug: string;
+  };
+}
+
+export function postPath(post: PostRoute) {
+  if (post.data.permalink) return post.data.permalink;
 
   const year = post.data.date.getUTCFullYear();
   const month = String(post.data.date.getUTCMonth() + 1).padStart(2, '0');
@@ -32,14 +40,36 @@ export function postPath(post: BlogPost) {
   return `/${year}/${month}/${day}/${slugify(post.data.slug)}/`;
 }
 
-const fullDate = new Intl.DateTimeFormat('en-US', {
+const reservedRoutes = /^\/(?:404(?:\/|$)|about(?:\/|$)|archives(?:\/|$)|atom\.xml(?:\/|$)|category(?:\/|$)|feed(?:\/|$)|og(?:\/|$)|page(?:\/|$)|robots\.txt(?:\/|$)|rss\.xml(?:\/|$)|search(?:\/|$)|site\.webmanifest(?:\/|$)|tag(?:\/|$))/i;
+
+export function validatePostPaths(posts: PostRoute[]) {
+  const seen = new Map<string, string>();
+  for (const post of posts) {
+    const path = postPath(post);
+    const name = post.id ?? post.data.slug;
+    if (reservedRoutes.test(path)) throw new Error(`Post "${name}" uses reserved permalink ${path}`);
+
+    const key = path.toLocaleLowerCase('en');
+    const duplicate = seen.get(key);
+    if (duplicate) throw new Error(`Posts "${duplicate}" and "${name}" share permalink ${path}`);
+    seen.set(key, name);
+  }
+}
+
+export function paginate<T>(items: T[], pageSize = siteConfig.postsPerPage) {
+  return Array.from({ length: Math.ceil(items.length / pageSize) }, (_, index) =>
+    items.slice(index * pageSize, (index + 1) * pageSize),
+  );
+}
+
+const fullDate = new Intl.DateTimeFormat(siteConfig.language, {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
   timeZone: 'UTC',
 });
 
-const monthDate = new Intl.DateTimeFormat('en-US', {
+const monthDate = new Intl.DateTimeFormat(siteConfig.language, {
   year: 'numeric',
   month: 'long',
   timeZone: 'UTC',

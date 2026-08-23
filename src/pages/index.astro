@@ -2,13 +2,13 @@
 import { getCollection } from 'astro:content';
 import PostList from '../components/PostList.astro';
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { POSTS_PER_PAGE, published, sortPosts } from '../lib/blog';
+import { paginate, published, sortPosts } from '../lib/blog';
 
 const posts = sortPosts((await getCollection('blog')).filter(published));
-const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+const pages = paginate(posts);
 ---
 
 <SiteLayout>
   <h1 class="screen-reader-text">Latest posts</h1>
-  <PostList posts={posts.slice(0, POSTS_PER_PAGE)} totalPages={totalPages} />
+  <PostList posts={pages[0] ?? []} totalPages={pages.length} />
 </SiteLayout>

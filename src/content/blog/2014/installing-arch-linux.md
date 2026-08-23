@@ -10,7 +10,7 @@ categories:
 tags:
   - Arch Linux
   - Tutorial
-legacyUrl: "/2014/08/25/install-arch-linux/"
+permalink: "/2014/08/25/install-arch-linux/"
 ---
 
 The installation guide is the source of truth. This note is the map I wish I had beside it: fewer commands, more explanation of the transitions between them.

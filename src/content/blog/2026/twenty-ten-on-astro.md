@@ -11,7 +11,7 @@ tags:
   - Astro
   - Markdown
   - Twenty Ten
-legacyUrl: "/2026/08/23/twenty-ten-on-astro/"
+permalink: "/2026/08/23/twenty-ten-on-astro/"
 ---
 
 Twenty Ten never asked the interface to compete with the writing. A large name, one landscape, a black navigation bar, a readable column, and a practical sidebar were enough.

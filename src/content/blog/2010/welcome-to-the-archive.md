@@ -8,7 +8,7 @@ categories:
   - Daily Life
 tags:
   - Meta
-legacyUrl: "/2010/06/18/welcome-to-the-archive/"
+permalink: "/2010/06/18/welcome-to-the-archive/"
 ---
 
 Every useful archive starts with a first note. This site is for things I want to find again: commands that saved an afternoon, explanations that finally clicked, and the occasional observation from outside the terminal.

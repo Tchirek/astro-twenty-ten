@@ -1,16 +1,18 @@
 ---
 import { getCollection, render } from 'astro:content';
-import type { BlogPost } from '../../../../lib/blog';
-import SiteLayout from '../../../../layouts/SiteLayout.astro';
-import { formatDate, postPath, published, readingMinutes, slugify, sortPosts } from '../../../../lib/blog';
+import SiteLayout from '../layouts/SiteLayout.astro';
+import type { BlogPost } from '../lib/blog';
+import { formatDate, postPath, published, readingMinutes, slugify, sortPosts, validatePostPaths } from '../lib/blog';
+import siteConfig from '../../site.config.ts';
 
 export async function getStaticPaths() {
   const posts = sortPosts((await getCollection('blog')).filter(published));
+  validatePostPaths(posts);
 
-  return posts.map((post) => {
-    const [year, month, day, slug] = postPath(post).split('/').filter(Boolean);
-    return { params: { year, month, day, slug }, props: { post, posts } };
-  });
+  return posts.map((post) => ({
+    params: { permalink: postPath(post).slice(1, -1) },
+    props: { post, posts },
+  }));
 }
 
 interface Props {
@@ -30,7 +32,7 @@ const minutes = readingMinutes(post.body ?? '');
 <SiteLayout
   title={post.data.title}
   description={post.data.description}
-  canonical={post.data.canonical}
+  canonical={post.data.canonical ?? postPath(post)}
   image={post.data.featuredImage}
   type="article"
   publishedTime={post.data.date}
@@ -41,12 +43,13 @@ const minutes = readingMinutes(post.body ?? '');
       <h1 class="post-title">{post.data.title}</h1>
       <p class="post-meta">
         Posted on <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
-        <span class="meta-separator">by</span> {post.data.author} · {minutes} min read
+        <span class="meta-separator">by</span> {post.data.author}
+        {siteConfig.features.readingTime && <> · {minutes} min read</>}
         {post.data.updated && <> · Updated <time datetime={post.data.updated.toISOString()}>{formatDate(post.data.updated)}</time></>}
       </p>
     </header>
 
-    {toc.length > 1 && (
+    {siteConfig.features.toc && toc.length > 1 && (
       <nav class="table-of-contents" aria-labelledby="toc-title">
         <h2 id="toc-title">Contents</h2>
         <ol>

@@ -2,20 +2,20 @@
 import { getCollection } from 'astro:content';
 import PostList from '../../components/PostList.astro';
 import SiteLayout from '../../layouts/SiteLayout.astro';
-import { POSTS_PER_PAGE, published, sortPosts } from '../../lib/blog';
+import { paginate, published, sortPosts } from '../../lib/blog';
 
 export async function getStaticPaths() {
   const posts = sortPosts((await getCollection('blog')).filter(published));
-  const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+  const pages = paginate(posts);
 
-  return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
+  return pages.slice(1).map((posts, index) => {
     const page = index + 2;
     return {
       params: { page: String(page) },
       props: {
-        posts: posts.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE),
+        posts,
         page,
-        totalPages,
+        totalPages: pages.length,
       },
     };
   });

@@ -1,13 +1,14 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import { postPath, published, sortPosts } from '../lib/blog';
+import siteConfig from '../../site.config.ts';
 
 export async function GET(context) {
   const posts = sortPosts((await getCollection('blog')).filter(published));
 
   return rss({
-    title: 'Twenty Ten Notes',
-    description: 'Notes on software, systems, and the small things learned along the way.',
+    title: siteConfig.title,
+    description: siteConfig.description,
     site: context.site,
     items: posts.map((post) => ({
       title: post.data.title,
@@ -16,6 +17,6 @@ export async function GET(context) {
       link: postPath(post),
       categories: [...post.data.categories, ...post.data.tags],
     })),
-    customData: '<language>en-us</language>',
+    customData: `<language>${siteConfig.language}</language>`,
   });
 }
