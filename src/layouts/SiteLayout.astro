@@ -1,5 +1,6 @@
 ---
 import { getImage } from 'astro:assets';
+import { ClientRouter } from 'astro:transitions';
 import headerSource from '../assets/header-demo.png';
 import BaseHead from '../components/BaseHead.astro';
 import BrowserEnhancements from '../components/BrowserEnhancements.astro';
@@ -51,6 +52,7 @@ const legacyHtml5Shim = `<!--[if lt IE 9]><script>(function(d){var e='article as
 <html lang={siteConfig.language} data-dark-mode={siteConfig.appearance.darkMode ? '' : undefined}>
   <head>
     <BaseHead {...headProps} headerImage={header.src} />
+    <ClientRouter fallback="swap" />
     <Fragment set:html={legacyHtml5Shim} />
     <BrowserEnhancements />
   </head>

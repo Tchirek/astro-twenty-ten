@@ -34,17 +34,23 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, '\\u003c').rep
   <script>
     import { querySearch, type SearchIndex } from '../lib/search';
 
-    const form = document.querySelector<HTMLFormElement>('#search-page-form');
-    const input = document.querySelector<HTMLInputElement>('#search-query');
-    const list = document.querySelector<HTMLUListElement>('#search-results');
-    const status = document.querySelector<HTMLElement>('#search-status');
-    const data = document.querySelector<HTMLScriptElement>('#search-index');
-    const index: SearchIndex = JSON.parse(data?.textContent ?? '{"documents":[],"postings":{}}');
+    function setupSearch() {
+      const form = document.querySelector<HTMLFormElement>('#search-page-form');
+      const input = document.querySelector<HTMLInputElement>('#search-query');
+      const list = document.querySelector<HTMLUListElement>('#search-results');
+      const status = document.querySelector<HTMLElement>('#search-status');
+      const data = document.querySelector<HTMLScriptElement>('#search-index');
+      if (!form || !input || !list || !status || !data || form.dataset.enhanced) return;
+      const searchForm = form;
+      const searchInput = input;
+      const resultList = list;
+      const resultStatus = status;
+      searchForm.dataset.enhanced = '';
+      const index: SearchIndex = JSON.parse(data.textContent ?? '{"documents":[],"postings":{}}');
 
-    function renderResults(query: string) {
-      if (!list || !status) return;
-      const matches = querySearch(index, query);
-        list.replaceChildren(...matches.map((entry) => {
+      function renderResults(query: string) {
+        const matches = querySearch(index, query);
+        resultList.replaceChildren(...matches.map((entry) => {
           const item = document.createElement('li');
           const heading = document.createElement('h2');
           const link = document.createElement('a');
@@ -57,30 +63,29 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, '\\u003c').rep
           item.append(heading, excerpt);
           return item;
         }));
-      status.textContent = query.trim() ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query.trim()}”.` : 'Enter a word or phrase.';
-    }
+        resultStatus.textContent = query.trim() ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query.trim()}”.` : 'Enter a word or phrase.';
+      }
 
-    function runSearch() {
-      const query = input?.value ?? '';
-      const url = new URL(location.href);
-      if (query.trim()) url.searchParams.set('q', query.trim());
-      else url.searchParams.delete('q');
-      history.replaceState(history.state, '', url);
-      renderResults(query);
-    }
+      function runSearch() {
+        const query = searchInput.value;
+        const url = new URL(location.href);
+        if (query.trim()) url.searchParams.set('q', query.trim());
+        else url.searchParams.delete('q');
+        history.replaceState(history.state, '', url);
+        renderResults(query);
+      }
 
-    if (form) {
-      form.addEventListener('submit', (event) => {
+      searchForm.addEventListener('submit', (event) => {
         event.preventDefault();
         runSearch();
       });
+
+      searchInput.value = new URLSearchParams(location.search).get('q') ?? '';
+      searchInput.addEventListener('input', runSearch);
+      renderResults(searchInput.value);
+      if (new URLSearchParams(location.search).has('focus')) searchInput.focus();
     }
 
-    if (input) {
-      input.value = new URLSearchParams(location.search).get('q') ?? '';
-      input.addEventListener('input', runSearch);
-      renderResults(input.value);
-      if (new URLSearchParams(location.search).has('focus')) input.focus();
-    }
+    document.addEventListener('astro:page-load', setupSearch);
   </script>
 </SiteLayout>

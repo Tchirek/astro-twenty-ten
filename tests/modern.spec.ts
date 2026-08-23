@@ -10,11 +10,39 @@ test('navigation, focus, and responsive layout remain usable', async ({ page, br
 
   if (browserName === 'webkit') await page.getByRole('link', { name: 'Skip to content' }).focus();
   else await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
+  const skipLink = page.getByRole('link', { name: 'Skip to content' });
+  await expect(skipLink).toBeFocused();
+  expect(await skipLink.evaluate((link) => getComputedStyle(link).outlineStyle)).toBe('solid');
 
-  await page.getByRole('link', { name: 'Archives', exact: true }).click();
-  await expect(page).toHaveURL(/\/archives\/$/);
-  await expect(page.locator('main h1')).toHaveText('Archives');
+  await page.evaluate(() => {
+    Reflect.set(window, '__navigationMarker', 'kept');
+    Reflect.set(window, '__topRevealCount', 0);
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (...args) {
+      if (this instanceof HTMLElement && this.classList.contains('page-grid')) {
+        Reflect.set(window, '__topRevealCount', Number(Reflect.get(window, '__topRevealCount')) + 1);
+      }
+      return Reflect.apply(animate, this, args);
+    };
+  });
+
+  for (const [label, path] of [['Archives', '/archives/'], ['About', '/about/'], ['Home', '/']] as const) {
+    await page.getByRole('link', { name: label, exact: true }).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(path);
+    expect(await page.evaluate(() => Reflect.get(window, '__navigationMarker'))).toBe('kept');
+  }
+  expect(await page.evaluate(() => Reflect.get(window, '__topRevealCount'))).toBe(0);
+
+  const article = page.locator('.post-summary h2 a').last();
+  const articlePath = await article.getAttribute('href');
+  if (!articlePath) throw new Error('Expected the article to have an href');
+  await article.scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(24);
+  await article.click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe(articlePath);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  expect(await page.evaluate(() => Reflect.get(window, '__navigationMarker'))).toBe('kept');
+  expect(await page.evaluate(() => Reflect.get(window, '__topRevealCount'))).toBe(1);
 
   await page.goto('/');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -31,6 +59,7 @@ test('theme and weighted instant search enhance the static pages', async ({ page
   await page.getByRole('button', { name: /Switch to dark mode/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');
+  expect(await page.getByRole('button', { name: /Switch to light mode/ }).evaluate((button) => getComputedStyle(button).outlineStyle)).not.toBe('dotted');
 
   await page.goto('/search/?q=Astro');
   await expect(page.getByRole('status')).toContainText('result');
@@ -59,8 +88,12 @@ test('article enhancements are layered over static content', async ({ page }) =>
       value: { writeText: async (value: string) => sessionStorage.setItem('copied-code', value) },
     });
   });
+  const width = await copy.evaluate((button) => button.getBoundingClientRect().width);
   await copy.click();
-  await expect(copy).toHaveText('Copied');
+  await expect(copy).toHaveText('Copy');
+  await expect(copy).toHaveAttribute('data-copy-state', 'copied');
+  await expect(copy.locator('xpath=following-sibling::*[@role="status"][1]')).toHaveText('Code copied to clipboard.');
+  expect(await copy.evaluate((button) => button.getBoundingClientRect().width)).toBe(width);
   expect(await page.evaluate(() => sessionStorage.getItem('copied-code'))).toContain('Markdown');
 });
 

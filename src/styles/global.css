@@ -116,23 +116,19 @@ input {
   font: inherit;
 }
 
-a:focus,
-button:focus,
-input:focus,
-select:focus,
-textarea:focus {
-  outline: 1px dotted #000;
-}
-
-:where(a, button):focus-visible {
-  outline-color: #ff4b33;
+:where(a, button):focus {
   outline: 2px solid var(--link-hover);
   outline-offset: 2px;
 }
 
-:where(input, select, textarea):focus-visible {
-  outline-color: #000;
-  outline: 1px solid var(--heading);
+@supports selector(:focus-visible) {
+  :where(a, button):focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+:where(input, select, textarea):focus {
+  outline: 1px solid var(--link);
   outline-offset: 1px;
 }
 
@@ -270,11 +266,6 @@ textarea:focus {
 
 .primary-nav a[aria-current='page'] {
   color: #fff;
-}
-
-.primary-nav a:focus-visible {
-  outline: auto;
-  outline-offset: 0;
 }
 
 .page-grid {
@@ -604,6 +595,19 @@ kbd {
   color: var(--content-text);
   cursor: pointer;
   font: 11px/16px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
+.copy-code[data-copy-state='copied'] {
+  border-color: var(--link);
+  background: var(--soft);
+  color: var(--link);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.copy-code[data-copy-state='failed'] {
+  border-color: var(--link-hover);
+  color: var(--link-hover);
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 .heading-link {
@@ -936,8 +940,10 @@ rt {
   }
 }
 
-@view-transition {
-  navigation: auto;
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

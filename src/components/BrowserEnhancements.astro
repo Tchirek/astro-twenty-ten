@@ -9,8 +9,12 @@ import siteConfig from '../../site.config.ts';
   } catch (error) {}
 </script>}
 <script>
+  import type { TransitionBeforePreparationEvent } from 'astro:transitions/client';
+
   const root = document.documentElement;
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let revealAtTop = false;
 
   function savedTheme() {
     try {
@@ -34,42 +38,84 @@ import siteConfig from '../../site.config.ts';
     themeButton.title = `Switch to ${next} mode`;
   }
 
-  const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-  updateThemeButton();
-  if (themeButton) {
-    themeButton.addEventListener('click', () => {
-      const next = currentTheme() === 'dark' ? 'light' : 'dark';
-      root.dataset.theme = next;
-      try {
-        localStorage.setItem('theme', next);
-      } catch {}
-      updateThemeButton();
-    });
+  function setupPage() {
+    const theme = savedTheme();
+    if (theme) root.dataset.theme = theme;
+    else delete root.dataset.theme;
+    updateThemeButton();
+
+    if (document.body.hasAttribute('data-code-copy') && navigator.clipboard) {
+      document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
+        const code = pre.querySelector('code');
+        if (!code || pre.querySelector('.copy-code')) return;
+        const button = document.createElement('button');
+        const status = document.createElement('span');
+        let resetTimer: number | undefined;
+        button.className = 'copy-code';
+        button.type = 'button';
+        button.textContent = 'Copy';
+        button.ariaLabel = 'Copy code';
+        status.className = 'screen-reader-text';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        button.addEventListener('click', async () => {
+          if (resetTimer) window.clearTimeout(resetTimer);
+          try {
+            await navigator.clipboard.writeText(code.textContent ?? '');
+            button.dataset.copyState = 'copied';
+            status.textContent = 'Code copied to clipboard.';
+          } catch {
+            button.dataset.copyState = 'failed';
+            status.textContent = 'Copy failed.';
+          }
+          resetTimer = window.setTimeout(() => {
+            delete button.dataset.copyState;
+            status.textContent = '';
+          }, 1500);
+        });
+        pre.append(button, status);
+      });
+    }
+
+    if (revealAtTop && !reducedMotion.matches) {
+      document.querySelector<HTMLElement>('.page-grid')?.animate?.(
+        [
+          { opacity: 0.82, transform: 'translateY(10px)' },
+          { opacity: 1, transform: 'translateY(0)' },
+        ],
+        { duration: 180, easing: 'ease-out' },
+      );
+    }
+    revealAtTop = false;
   }
 
-  if (document.body.hasAttribute('data-code-copy') && navigator.clipboard) {
-    document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
-      const code = pre.querySelector('code');
-      if (!code) return;
-      const button = document.createElement('button');
-      button.className = 'copy-code';
-      button.type = 'button';
-      button.textContent = 'Copy';
-      button.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(code.textContent ?? '');
-          button.textContent = 'Copied';
-        } catch {
-          button.textContent = 'Copy failed';
-        }
-        window.setTimeout(() => (button.textContent = 'Copy'), 1500);
-      });
-      pre.append(button);
-    });
-  }
+  document.addEventListener('astro:before-preparation', (event) => {
+    const navigation = event as TransitionBeforePreparationEvent;
+    revealAtTop = navigation.navigationType !== 'traverse'
+      && navigation.sourceElement instanceof HTMLAnchorElement
+      && window.scrollY > 24
+      && (navigation.from.pathname !== navigation.to.pathname || navigation.from.search !== navigation.to.search);
+  });
+
+  document.addEventListener('astro:page-load', setupPage);
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const themeButton = target?.closest<HTMLButtonElement>('[data-theme-toggle]');
+    if (!themeButton) return;
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {}
+    updateThemeButton();
+  });
 
   systemTheme.addEventListener?.('change', () => {
-    if (!savedTheme()) updateThemeButton();
+    if (!savedTheme()) {
+      delete root.dataset.theme;
+      updateThemeButton();
+    }
   });
 
   document.body.hasAttribute('data-search-shortcut') && document.addEventListener('keydown', (event) => {
