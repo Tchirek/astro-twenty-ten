@@ -14,7 +14,11 @@
     "check": "astro check",
     "lint": "astro check",
     "preview": "astro preview",
-    "test": "node --test src/lib/blog.test.ts src/lib/og.test.ts src/lib/rehype-twenty-ten.test.ts src/lib/search.test.ts"
+    "test": "node --test src/lib/blog.test.ts src/lib/og.test.ts src/lib/rehype-twenty-ten.test.ts src/lib/search.test.ts",
+    "test:routes": "node --test tests/routes.test.mjs tests/legacy-baseline.test.mjs",
+    "test:e2e": "playwright test tests/modern.spec.ts",
+    "test:visual": "playwright test tests/visual.spec.ts --project=chromium",
+    "test:visual:update": "playwright test tests/visual.spec.ts --project=chromium --update-snapshots"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",
@@ -26,6 +30,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.62.1",
     "typescript": "^6.0.3"
   }
 }

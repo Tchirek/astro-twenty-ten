@@ -6,3 +6,6 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+test-results/
+playwright-report/
+blob-report/

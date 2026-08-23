@@ -11,6 +11,8 @@ export default defineConfig({
   site,
   trailingSlash: 'always',
   integrations: [mdx(), sitemap()],
+  // Preserve paired CSS 2.1 and custom-property declarations for legacy parsers.
+  vite: { build: { cssMinify: false } },
   redirects: {
     '/feed': '/rss.xml',
   },
