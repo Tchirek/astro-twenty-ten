@@ -18,7 +18,7 @@ const older = currentPage < totalPages ? `/page/${currentPage + 1}/` : undefined
 {posts.length > 0 ? posts.map((post) => <PostSummary post={post} />) : <p>No posts found.</p>}
 {totalPages > 1 && (
   <nav class="pagination" aria-label="Post pages">
-    {currentPage > 1 && <a href={newer}>← Newer Posts</a>}
-    {older && <a href={older}>Older Posts →</a>}
+    {currentPage > 1 && <a class="nav-newer" href={newer}>← Newer Posts</a>}
+    {older && <a class="nav-older" href={older}>Older Posts →</a>}
   </nav>
 )}

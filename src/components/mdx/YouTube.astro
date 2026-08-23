@@ -1,0 +1,22 @@
+---
+interface Props {
+  id: string;
+  title: string;
+}
+
+const { id, title } = Astro.props;
+if (!/^[\w-]{11}$/.test(id)) throw new Error(`Invalid YouTube video id: ${id}`);
+const watchUrl = `https://www.youtube.com/watch?v=${id}`;
+---
+
+<div class="mdx-video">
+  <iframe
+    src={`https://www.youtube-nocookie.com/embed/${id}`}
+    title={title}
+    loading="lazy"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen
+  ></iframe>
+</div>
+<p class="mdx-video-fallback"><a class="external-link" href={watchUrl} target="_blank" rel="external noopener">Watch “{title}” on YouTube<span class="external-link-mark" aria-hidden="true">↗</span></a>.</p>

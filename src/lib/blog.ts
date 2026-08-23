@@ -40,10 +40,17 @@ export function postPath(post: PostRoute) {
   return `/${year}/${month}/${day}/${slugify(post.data.slug)}/`;
 }
 
+export function postOgPath(post: PostRoute) {
+  const slug = slugify(post.data.slug);
+  if (!slug) throw new Error(`Post "${post.id ?? post.data.slug}" needs a URL-safe slug for its OG image`);
+  return `/og/${slug}.png`;
+}
+
 const reservedRoutes = /^\/(?:404(?:\/|$)|about(?:\/|$)|archives(?:\/|$)|atom\.xml(?:\/|$)|category(?:\/|$)|feed(?:\/|$)|og(?:\/|$)|page(?:\/|$)|robots\.txt(?:\/|$)|rss\.xml(?:\/|$)|search(?:\/|$)|site\.webmanifest(?:\/|$)|tag(?:\/|$))/i;
 
 export function validatePostPaths(posts: PostRoute[]) {
   const seen = new Map<string, string>();
+  const seenOg = new Map<string, string>();
   for (const post of posts) {
     const path = postPath(post);
     const name = post.id ?? post.data.slug;
@@ -53,6 +60,11 @@ export function validatePostPaths(posts: PostRoute[]) {
     const duplicate = seen.get(key);
     if (duplicate) throw new Error(`Posts "${duplicate}" and "${name}" share permalink ${path}`);
     seen.set(key, name);
+
+    const ogPath = postOgPath(post).toLocaleLowerCase('en');
+    const duplicateOg = seenOg.get(ogPath);
+    if (duplicateOg) throw new Error(`Posts "${duplicateOg}" and "${name}" share OG image ${ogPath}`);
+    seenOg.set(ogPath, name);
   }
 }
 

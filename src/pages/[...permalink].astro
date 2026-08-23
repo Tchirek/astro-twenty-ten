@@ -1,8 +1,12 @@
 ---
 import { getCollection, render } from 'astro:content';
+import Aside from '../components/mdx/Aside.astro';
+import Details from '../components/mdx/Details.astro';
+import Figure from '../components/mdx/Figure.astro';
+import YouTube from '../components/mdx/YouTube.astro';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import type { BlogPost } from '../lib/blog';
-import { formatDate, postPath, published, readingMinutes, slugify, sortPosts, validatePostPaths } from '../lib/blog';
+import { formatDate, postOgPath, postPath, published, readingMinutes, slugify, sortPosts, validatePostPaths } from '../lib/blog';
 import siteConfig from '../../site.config.ts';
 
 export async function getStaticPaths() {
@@ -33,7 +37,7 @@ const minutes = readingMinutes(post.body ?? '');
   title={post.data.title}
   description={post.data.description}
   canonical={post.data.canonical ?? postPath(post)}
-  image={post.data.featuredImage}
+  image={post.data.featuredImage ?? postOgPath(post)}
   type="article"
   publishedTime={post.data.date}
   updatedTime={post.data.updated}
@@ -59,7 +63,7 @@ const minutes = readingMinutes(post.body ?? '');
     )}
 
     <div class="post-content">
-      <Content />
+      <Content components={{ Aside, Details, Figure, YouTube }} />
     </div>
 
     <footer class="entry-utility">
@@ -78,8 +82,8 @@ const minutes = readingMinutes(post.body ?? '');
 
   {(older || newer) && (
     <nav class="post-navigation" aria-label="Adjacent posts">
-      {newer && <a href={postPath(newer)}>← Newer: {newer.data.title}</a>}
-      {older && <a href={postPath(older)}>Older: {older.data.title} →</a>}
+      {newer && <a class="nav-newer" href={postPath(newer)}>← Newer: {newer.data.title}</a>}
+      {older && <a class="nav-older" href={postPath(older)}>Older: {older.data.title} →</a>}
     </nav>
   )}
 </SiteLayout>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { paginate, postPath, readingMinutes, slugify, sortPosts, validatePostPaths } from './blog.ts';
+import { paginate, postOgPath, postPath, readingMinutes, slugify, sortPosts, validatePostPaths } from './blog.ts';
 
 test('blog helpers keep routes stable and content ordered', () => {
   assert.equal(slugify('C++ & C#'), 'c-plus-plus-and-c-sharp');
@@ -12,6 +12,7 @@ test('blog helpers keep routes stable and content ordered', () => {
   const custom = { id: 'custom', data: { date: new Date('2020-01-02'), slug: 'ignored', permalink: '/notes/hello/' } };
   assert.equal(postPath(dated), '/2020/01/02/hello-world/');
   assert.equal(postPath(custom), '/notes/hello/');
+  assert.equal(postOgPath(custom), '/og/ignored.png');
   assert.doesNotThrow(() => validatePostPaths([dated, custom]));
   assert.throws(
     () => validatePostPaths([custom, { ...custom, id: 'duplicate' }]),
@@ -20,6 +21,10 @@ test('blog helpers keep routes stable and content ordered', () => {
   assert.throws(
     () => validatePostPaths([{ ...custom, data: { ...custom.data, permalink: '/search/post/' } }]),
     /reserved permalink/,
+  );
+  assert.throws(
+    () => validatePostPaths([dated, { ...custom, id: 'same-og', data: { ...custom.data, slug: 'Hello World' } }]),
+    /share OG image/,
   );
   assert.deepEqual(paginate([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
 
