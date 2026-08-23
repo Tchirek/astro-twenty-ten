@@ -1,17 +1,14 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import siteConfig from '../../site.config.ts';
 ---
 
-<script is:inline>
+{siteConfig.appearance.darkMode && <script is:inline>
   try {
-    const theme = localStorage.getItem('theme');
-    if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
-  } catch {}
-</script>
-<ClientRouter fallback="swap" />
+    var theme = localStorage.getItem('theme');
+    if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+  } catch (error) {}
+</script>}
 <script>
-  import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
-
   const root = document.documentElement;
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -37,60 +34,45 @@ import { ClientRouter } from 'astro:transitions';
     themeButton.title = `Switch to ${next} mode`;
   }
 
-  function initializePage() {
-    const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-    updateThemeButton();
-    if (themeButton) {
-      themeButton.onclick = () => {
-        const next = currentTheme() === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = next;
-        try {
-          localStorage.setItem('theme', next);
-        } catch {}
-        updateThemeButton();
-      };
-    }
+  const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  updateThemeButton();
+  if (themeButton) {
+    themeButton.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem('theme', next);
+      } catch {}
+      updateThemeButton();
+    });
+  }
 
+  if (document.body.hasAttribute('data-code-copy') && navigator.clipboard) {
     document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
       const code = pre.querySelector('code');
-      if (!code || pre.querySelector('.copy-code')) return;
+      if (!code) return;
       const button = document.createElement('button');
       button.className = 'copy-code';
       button.type = 'button';
       button.textContent = 'Copy';
       button.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(code.textContent ?? '');
-        button.textContent = 'Copied';
+        try {
+          await navigator.clipboard.writeText(code.textContent ?? '');
+          button.textContent = 'Copied';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
         window.setTimeout(() => (button.textContent = 'Copy'), 1500);
       });
       pre.append(button);
     });
-
-    document.querySelectorAll<HTMLElement>('.post-content :is(h2, h3)[id]').forEach((heading) => {
-      if (heading.querySelector('.heading-link')) return;
-      const link = document.createElement('a');
-      link.className = 'heading-link';
-      link.href = `#${heading.id}`;
-      link.textContent = '#';
-      link.setAttribute('aria-label', `Link to ${heading.textContent}`);
-      heading.append(link);
-    });
   }
 
-  document.addEventListener('astro:before-swap', (event) => {
-    const theme = root.dataset.theme;
-    if (theme === 'light' || theme === 'dark') {
-      (event as TransitionBeforeSwapEvent).newDocument.documentElement.dataset.theme = theme;
-    }
-  });
-
-  document.addEventListener('astro:page-load', initializePage);
-
-  systemTheme.addEventListener('change', () => {
+  systemTheme.addEventListener?.('change', () => {
     if (!savedTheme()) updateThemeButton();
   });
 
-  document.addEventListener('keydown', (event) => {
+  document.body.hasAttribute('data-search-shortcut') && document.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       document.querySelector<HTMLInputElement>('[data-site-search]')?.focus();

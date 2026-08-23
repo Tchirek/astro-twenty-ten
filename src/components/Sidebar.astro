@@ -11,6 +11,8 @@ for (const category of posts.flatMap((post) => post.data.categories)) {
   categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
 }
 
+const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort((a, b) => a.localeCompare(b));
+
 const archiveCounts = new Map<string, { date: Date; count: number }>();
 for (const post of posts) {
   const key = monthKey(post.data.date);
@@ -51,6 +53,13 @@ for (const post of posts) {
       {[...archiveCounts.entries()].map(([key, entry]) => (
         <li><a href={`/archives/#${key}`}>{formatMonth(entry.date)}</a> <span>({entry.count})</span></li>
       ))}
+    </ul>
+  </section>
+
+  <section class="widget">
+    <h2>Tags</h2>
+    <ul>
+      {tags.map((tag) => <li><a href={`/tag/${slugify(tag)}/`}>{tag}</a></li>)}
     </ul>
   </section>
 

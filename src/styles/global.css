@@ -531,9 +531,19 @@ kbd {
   font-weight: normal;
 }
 
+.heading-link::before {
+  content: '#';
+}
+
 :is(h2, h3):hover .heading-link,
 .heading-link:focus {
   opacity: 1;
+}
+
+.external-link-mark {
+  margin-left: 0.18em;
+  font-size: 0.8em;
+  vertical-align: text-top;
 }
 
 .table-of-contents {

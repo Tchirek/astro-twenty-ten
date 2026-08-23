@@ -40,7 +40,11 @@ const activePath = (href: string) => href === '/' ? path === '/' : path.startsWi
     <BaseHead {...headProps} headerImage={header.src} />
     <BrowserEnhancements />
   </head>
-  <body id="top">
+  <body
+    id="top"
+    data-code-copy={siteConfig.features.codeCopy ? '' : undefined}
+    data-search-shortcut={siteConfig.features.search ? '' : undefined}
+  >
     <a class="skip-link" href="#content">Skip to content</a>
     <div class="site-shell">
       <header class="site-header">
@@ -52,7 +56,6 @@ const activePath = (href: string) => href === '/' ? path === '/' : path.startsWi
           src={header.src}
           {...header.attributes}
           class="header-art"
-          transition:persist="header-art"
         />
         <nav class="primary-nav" aria-label="Primary navigation">
           <div class="nav-links">

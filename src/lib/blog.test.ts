@@ -6,6 +6,7 @@ test('blog helpers keep routes stable and content ordered', () => {
   assert.equal(slugify('C++ & C#'), 'c-plus-plus-and-c-sharp');
   assert.equal(slugify('生活 随笔'), '生活-随笔');
   assert.equal(readingMinutes('hello world'), 1);
+  assert.equal(readingMinutes('文'.repeat(401)), 2);
 
   const dated = { id: 'dated', data: { date: new Date('2020-01-02'), slug: 'Hello World' } };
   const custom = { id: 'custom', data: { date: new Date('2020-01-02'), slug: 'ignored', permalink: '/notes/hello/' } };

@@ -28,7 +28,7 @@ The rendering path is now pleasantly short:
 Markdown → Astro → HTML + CSS
 ```
 
-There is no database query between a reader and a paragraph. Dark mode respects the operating system, code blocks are highlighted at build time, and the layout collapses cleanly on a phone.
+There is no database query between a reader and a paragraph. [Astro](https://astro.build/) builds the pages, dark mode respects the operating system, code blocks are highlighted at build time, and the layout collapses cleanly on a phone.
 
 ### JavaScript with a job
 
