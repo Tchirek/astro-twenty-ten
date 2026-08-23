@@ -80,6 +80,7 @@ html {
 
 body {
   margin: 0;
+  zoom: 1.1;
   background: #f1f1f1;
   background: var(--page);
   color: #666;
@@ -478,6 +479,7 @@ kbd {
 
 .post-content {
   padding-top: 12px;
+  font-family: Georgia, 'Bitstream Charter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, 'Noto Sans', sans-serif;
 }
 
 :lang(zh) .post-content,
@@ -530,7 +532,43 @@ kbd {
   padding: 0 3em;
   color: #777;
   color: var(--muted);
+  font-family: Georgia, 'Bitstream Charter', 'Noto Serif CJK TC', 'Noto Serif CJK SC', 'Yu Mincho', PMingLiU, SimSun, serif;
   font-style: italic;
+}
+
+.post-content > :not(pre)::selection,
+.post-content li::selection {
+  color: #111;
+}
+
+.post-content > :not(pre):nth-child(6n + 1)::selection,
+.post-content li:nth-child(6n + 1)::selection {
+  background-color: light-dark(#a3c4d9, #4a7c9e);
+}
+
+.post-content > :not(pre):nth-child(6n + 2)::selection,
+.post-content li:nth-child(6n + 2)::selection {
+  background-color: light-dark(#c3b2d9, #8064a0);
+}
+
+.post-content > :not(pre):nth-child(6n + 3)::selection,
+.post-content li:nth-child(6n + 3)::selection {
+  background-color: light-dark(#e8afae, #b5615f);
+}
+
+.post-content > :not(pre):nth-child(6n + 4)::selection,
+.post-content li:nth-child(6n + 4)::selection {
+  background-color: light-dark(#e8c39a, #b8804a);
+}
+
+.post-content > :not(pre):nth-child(6n + 5)::selection,
+.post-content li:nth-child(6n + 5)::selection {
+  background-color: light-dark(#e3d89c, #b8a64c);
+}
+
+.post-content > :not(pre):nth-child(6n + 6)::selection,
+.post-content li:nth-child(6n + 6)::selection {
+  background-color: light-dark(#a8c8a2, #5e8f5a);
 }
 
 .post-content :not(pre) > code {
@@ -946,7 +984,7 @@ rt {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1078px) {
   .site-shell {
     box-sizing: border-box;
     width: 100%;
