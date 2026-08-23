@@ -50,7 +50,6 @@ import siteConfig from '../../site.config.ts';
         if (!code || pre.querySelector('.copy-code')) return;
         const button = document.createElement('button');
         const status = document.createElement('span');
-        let resetTimer: number | undefined;
         button.className = 'copy-code';
         button.type = 'button';
         button.textContent = 'Copy';
@@ -59,19 +58,13 @@ import siteConfig from '../../site.config.ts';
         status.setAttribute('role', 'status');
         status.setAttribute('aria-live', 'polite');
         button.addEventListener('click', async () => {
-          if (resetTimer) window.clearTimeout(resetTimer);
+          status.textContent = '';
           try {
             await navigator.clipboard.writeText(code.textContent ?? '');
-            button.dataset.copyState = 'copied';
             status.textContent = 'Code copied to clipboard.';
           } catch {
-            button.dataset.copyState = 'failed';
             status.textContent = 'Copy failed.';
           }
-          resetTimer = window.setTimeout(() => {
-            delete button.dataset.copyState;
-            status.textContent = '';
-          }, 1500);
         });
         pre.append(button, status);
       });

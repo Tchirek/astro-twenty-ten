@@ -597,16 +597,10 @@ kbd {
   font: 11px/16px 'Helvetica Neue', Arial, Helvetica, sans-serif;
 }
 
-.copy-code[data-copy-state='copied'] {
+.copy-code:active {
   border-color: var(--link);
   background: var(--soft);
   color: var(--link);
-  box-shadow: inset 0 0 0 1px currentColor;
-}
-
-.copy-code[data-copy-state='failed'] {
-  border-color: var(--link-hover);
-  color: var(--link-hover);
   box-shadow: inset 0 0 0 1px currentColor;
 }
 

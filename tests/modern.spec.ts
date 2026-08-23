@@ -88,10 +88,18 @@ test('article enhancements are layered over static content', async ({ page }) =>
       value: { writeText: async (value: string) => sessionStorage.setItem('copied-code', value) },
     });
   });
+  await copy.scrollIntoViewIfNeeded();
   const width = await copy.evaluate((button) => button.getBoundingClientRect().width);
-  await copy.click();
+  const restingShadow = await copy.evaluate((button) => getComputedStyle(button).boxShadow);
+  const box = await copy.boundingBox();
+  if (!box) throw new Error('Expected the copy button to have a bounding box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
   await expect(copy).toHaveText('Copy');
-  await expect(copy).toHaveAttribute('data-copy-state', 'copied');
+  await expect.poll(() => copy.evaluate((button) => getComputedStyle(button).boxShadow)).not.toBe(restingShadow);
+  expect(await copy.evaluate((button) => button.getBoundingClientRect().width)).toBe(width);
+  await page.mouse.up();
+  await expect.poll(() => copy.evaluate((button) => getComputedStyle(button).boxShadow)).toBe(restingShadow);
   await expect(copy.locator('xpath=following-sibling::*[@role="status"][1]')).toHaveText('Code copied to clipboard.');
   expect(await copy.evaluate((button) => button.getBoundingClientRect().width)).toBe(width);
   expect(await page.evaluate(() => sessionStorage.getItem('copied-code'))).toContain('Markdown');
