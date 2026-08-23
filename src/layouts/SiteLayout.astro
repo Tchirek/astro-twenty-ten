@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
+import { ClientRouter } from 'astro:transitions';
 import headerSource from '../assets/header-demo.png';
 import { formatMonth, monthKey, postPath, published, slugify, sortPosts } from '../lib/blog';
 import '../styles/global.css';
@@ -81,7 +82,7 @@ const schema = type === 'article'
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -109,6 +110,7 @@ const schema = type === 'article'
         if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
       } catch {}
     </script>
+    <ClientRouter fallback="swap" />
   </head>
   <body id="top">
     <a class="skip-link" href="#content">Skip to content</a>
@@ -118,7 +120,13 @@ const schema = type === 'article'
           <a class="site-title" href="/">{siteName}</a>
           <p class="site-description">Notes, links, and small experiments.</p>
         </div>
-        <img src={header.src} {...header.attributes} class="header-art" />
+        <img
+          src={header.src}
+          {...header.attributes}
+          class="header-art"
+          transition:persist="header-art"
+          transition:animate="none"
+        />
         <nav class="primary-nav" aria-label="Primary navigation">
           <div class="nav-links">
             <a href="/" aria-current={path === '/' ? 'page' : undefined}>主頁</a>
@@ -190,8 +198,9 @@ const schema = type === 'article'
     </div>
 
     <script>
+      import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
+
       const root = document.documentElement;
-      const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
 
       function savedTheme() {
@@ -208,6 +217,7 @@ const schema = type === 'article'
       }
 
       function updateThemeButton() {
+        const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
         if (!themeButton) return;
         const next = currentTheme() === 'dark' ? 'light' : 'dark';
         themeButton.textContent = next === 'dark' ? '☾' : '☀';
@@ -215,15 +225,55 @@ const schema = type === 'article'
         themeButton.title = `Switch to ${next} mode`;
       }
 
-      updateThemeButton();
-      themeButton?.addEventListener('click', () => {
-        const next = currentTheme() === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = next;
-        try {
-          localStorage.setItem('theme', next);
-        } catch {}
+      function initializePage() {
+        const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
         updateThemeButton();
+        if (themeButton) {
+          themeButton.onclick = () => {
+            const next = currentTheme() === 'dark' ? 'light' : 'dark';
+            root.dataset.theme = next;
+            try {
+              localStorage.setItem('theme', next);
+            } catch {}
+            updateThemeButton();
+          };
+        }
+
+        document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
+          const code = pre.querySelector('code');
+          if (!code || pre.querySelector('.copy-code')) return;
+          const button = document.createElement('button');
+          button.className = 'copy-code';
+          button.type = 'button';
+          button.textContent = 'Copy';
+          button.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(code.textContent ?? '');
+            button.textContent = 'Copied';
+            window.setTimeout(() => (button.textContent = 'Copy'), 1500);
+          });
+          pre.append(button);
+        });
+
+        document.querySelectorAll<HTMLElement>('.post-content :is(h2, h3)[id]').forEach((heading) => {
+          if (heading.querySelector('.heading-link')) return;
+          const link = document.createElement('a');
+          link.className = 'heading-link';
+          link.href = `#${heading.id}`;
+          link.textContent = '#';
+          link.setAttribute('aria-label', `Link to ${heading.textContent}`);
+          heading.append(link);
+        });
+      }
+
+      document.addEventListener('astro:before-swap', (event) => {
+        const theme = root.dataset.theme;
+        if (theme === 'light' || theme === 'dark') {
+          (event as TransitionBeforeSwapEvent).newDocument.documentElement.dataset.theme = theme;
+        }
       });
+
+      document.addEventListener('astro:page-load', initializePage);
+
       systemTheme.addEventListener('change', () => {
         if (!savedTheme()) updateThemeButton();
       });
@@ -233,30 +283,6 @@ const schema = type === 'article'
           event.preventDefault();
           document.querySelector<HTMLInputElement>('[data-site-search]')?.focus();
         }
-      });
-
-      document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
-        const code = pre.querySelector('code');
-        if (!code) return;
-        const button = document.createElement('button');
-        button.className = 'copy-code';
-        button.type = 'button';
-        button.textContent = 'Copy';
-        button.addEventListener('click', async () => {
-          await navigator.clipboard.writeText(code.textContent ?? '');
-          button.textContent = 'Copied';
-          window.setTimeout(() => (button.textContent = 'Copy'), 1500);
-        });
-        pre.append(button);
-      });
-
-      document.querySelectorAll<HTMLElement>('.post-content :is(h2, h3)[id]').forEach((heading) => {
-        const link = document.createElement('a');
-        link.className = 'heading-link';
-        link.href = `#${heading.id}`;
-        link.textContent = '#';
-        link.setAttribute('aria-label', `Link to ${heading.textContent}`);
-        heading.append(link);
       });
     </script>
   </body>

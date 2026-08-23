@@ -39,50 +39,57 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, '\\u003c');
       haystack: string;
     }
 
-    const form = document.querySelector<HTMLFormElement>('#search-page-form');
-    const input = document.querySelector<HTMLInputElement>('#search-query');
-    const list = document.querySelector<HTMLUListElement>('#search-results');
-    const status = document.querySelector<HTMLElement>('#search-status');
-    const data = document.querySelector<HTMLScriptElement>('#search-index');
-    const entries: SearchEntry[] = JSON.parse(data?.textContent ?? '[]');
+    function initializeSearch() {
+      const form = document.querySelector<HTMLFormElement>('#search-page-form');
+      if (!form || form.dataset.ready) return;
+      form.dataset.ready = 'true';
 
-    function renderResults(query: string) {
-      if (!list || !status) return;
-      const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
-      const matches = terms.length ? entries.filter((entry) => terms.every((term) => entry.haystack.includes(term))) : [];
-      list.replaceChildren(...matches.map((entry) => {
-        const item = document.createElement('li');
-        const heading = document.createElement('h2');
-        const link = document.createElement('a');
-        const excerpt = document.createElement('p');
-        link.href = entry.url;
-        link.textContent = entry.title;
-        excerpt.textContent = entry.description;
-        heading.append(link);
-        item.append(heading, excerpt);
-        return item;
-      }));
-      status.textContent = terms.length ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query.trim()}”.` : 'Enter a word or phrase.';
+      const input = document.querySelector<HTMLInputElement>('#search-query');
+      const list = document.querySelector<HTMLUListElement>('#search-results');
+      const status = document.querySelector<HTMLElement>('#search-status');
+      const data = document.querySelector<HTMLScriptElement>('#search-index');
+      const entries: SearchEntry[] = JSON.parse(data?.textContent ?? '[]');
+
+      function renderResults(query: string) {
+        if (!list || !status) return;
+        const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+        const matches = terms.length ? entries.filter((entry) => terms.every((term) => entry.haystack.includes(term))) : [];
+        list.replaceChildren(...matches.map((entry) => {
+          const item = document.createElement('li');
+          const heading = document.createElement('h2');
+          const link = document.createElement('a');
+          const excerpt = document.createElement('p');
+          link.href = entry.url;
+          link.textContent = entry.title;
+          excerpt.textContent = entry.description;
+          heading.append(link);
+          item.append(heading, excerpt);
+          return item;
+        }));
+        status.textContent = terms.length ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query.trim()}”.` : 'Enter a word or phrase.';
+      }
+
+      function runSearch() {
+        const query = input?.value ?? '';
+        const url = new URL(location.href);
+        if (query.trim()) url.searchParams.set('q', query.trim());
+        else url.searchParams.delete('q');
+        history.replaceState(history.state, '', url);
+        renderResults(query);
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        runSearch();
+      });
+
+      if (input) {
+        input.value = new URLSearchParams(location.search).get('q') ?? '';
+        renderResults(input.value);
+        if (new URLSearchParams(location.search).has('focus')) input.focus();
+      }
     }
 
-    function runSearch() {
-      const query = input?.value ?? '';
-      const url = new URL(location.href);
-      if (query.trim()) url.searchParams.set('q', query.trim());
-      else url.searchParams.delete('q');
-      history.replaceState({}, '', url);
-      renderResults(query);
-    }
-
-    form?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      runSearch();
-    });
-
-    if (input) {
-      input.value = new URLSearchParams(location.search).get('q') ?? '';
-      renderResults(input.value);
-      if (new URLSearchParams(location.search).has('focus')) input.focus();
-    }
+    document.addEventListener('astro:page-load', initializeSearch);
   </script>
 </SiteLayout>
