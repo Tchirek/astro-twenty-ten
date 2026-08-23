@@ -18,6 +18,7 @@ test('production build emits durable discovery and taxonomy routes', async () =>
   await Promise.all(paths.map((path) => access(new URL(`../dist/${path}`, import.meta.url))));
 
   const home = await read('index.html');
+  assert.match(home, /<html lang="en" data-dark-mode>/);
   assert.match(home, /href="\/category\/programming\/"/);
   assert.match(home, /href="\/tag\/astro\/"/);
 

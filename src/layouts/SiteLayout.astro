@@ -48,7 +48,7 @@ const legacyHtml5Shim = `<!--[if lt IE 9]><script>(function(d){var e='article as
 ---
 
 <!doctype html>
-<html lang={siteConfig.language}>
+<html lang={siteConfig.language} data-dark-mode={siteConfig.appearance.darkMode ? '' : undefined}>
   <head>
     <BaseHead {...headProps} headerImage={header.src} />
     <Fragment set:html={legacyHtml5Shim} />
