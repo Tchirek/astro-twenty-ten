@@ -1,9 +1,9 @@
 ---
-import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
-import { ClientRouter } from 'astro:transitions';
 import headerSource from '../assets/header-demo.png';
-import { formatMonth, monthKey, postPath, published, slugify, sortPosts } from '../lib/blog';
+import BaseHead from '../components/BaseHead.astro';
+import BrowserEnhancements from '../components/BrowserEnhancements.astro';
+import Sidebar from '../components/Sidebar.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -28,89 +28,16 @@ const header = await getImage({
   alt: '',
 });
 
-const {
-  title,
-  description = 'Notes on software, systems, and the small things learned along the way.',
-  canonical,
-  image = header.src,
-  type = 'website',
-  publishedTime,
-  updatedTime,
-  noSidebar = false,
-} = Astro.props;
-
+const { noSidebar = false, ...headProps } = Astro.props;
 const siteName = 'Twenty Ten Notes';
-const pageTitle = title ? `${title} | ${siteName}` : siteName;
-const site = Astro.site ?? new URL('https://example.com');
-const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site).href;
-const imageUrl = new URL(image, site).href;
-const path = Astro.url.pathname;
-const posts = sortPosts((await getCollection('blog')).filter(published));
-const recent = posts.slice(0, 5);
-
-const categoryCounts = new Map<string, number>();
-for (const category of posts.flatMap((post) => post.data.categories)) {
-  categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
-}
-
-const archiveCounts = new Map<string, { date: Date; count: number }>();
-for (const post of posts) {
-  const key = monthKey(post.data.date);
-  const current = archiveCounts.get(key);
-  archiveCounts.set(key, { date: post.data.date, count: (current?.count ?? 0) + 1 });
-}
-
-const schema = type === 'article'
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
-      headline: title,
-      description,
-      image: imageUrl,
-      datePublished: publishedTime?.toISOString(),
-      dateModified: (updatedTime ?? publishedTime)?.toISOString(),
-      author: { '@type': 'Person', name: 'Demo Author' },
-      mainEntityOfPage: canonicalUrl,
-    }
-  : {
-      '@context': 'https://schema.org',
-      '@type': 'Blog',
-      name: siteName,
-      description,
-      url: canonicalUrl,
-    };
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 ---
 
 <!doctype html>
 <html lang="en" transition:animate="none">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
-    <meta name="theme-color" content="#111111" />
-    <link rel="canonical" href={canonicalUrl} />
-    <link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href="/rss.xml" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <link rel="preload" as="image" href={header.src} type="image/webp" fetchpriority="high" />
-    <meta property="og:type" content={type} />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content={imageUrl} />
-    <meta name="twitter:card" content="summary_large_image" />
-    {publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
-    {updatedTime && <meta property="article:modified_time" content={updatedTime.toISOString()} />}
-    <title>{pageTitle}</title>
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)}></script>
-    <script is:inline>
-      try {
-        const theme = localStorage.getItem('theme');
-        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
-      } catch {}
-    </script>
-    <ClientRouter fallback="swap" />
+    <BaseHead {...headProps} siteName={siteName} headerImage={header.src} />
+    <BrowserEnhancements />
   </head>
   <body id="top">
     <a class="skip-link" href="#content">Skip to content</a>
@@ -125,12 +52,11 @@ const schema = type === 'article'
           {...header.attributes}
           class="header-art"
           transition:persist="header-art"
-          transition:animate="none"
         />
         <nav class="primary-nav" aria-label="Primary navigation">
           <div class="nav-links">
             <a href="/" aria-current={path === '/' ? 'page' : undefined}>主頁</a>
-            <a href="/about/" aria-current={path === '/about/' ? 'page' : undefined}>About Me</a>
+            <a href="/about/" aria-current={path === '/about' ? 'page' : undefined}>About Me</a>
             <a href="/archives/" aria-current={path.startsWith('/archives') ? 'page' : undefined}>Archives</a>
           </div>
           <div class="nav-tools">
@@ -144,51 +70,7 @@ const schema = type === 'article'
           <slot />
         </main>
 
-        {!noSidebar && (
-          <aside class="sidebar" aria-label="Blog sidebar">
-            <section class="widget">
-              <h2>Search</h2>
-              <form class="search-form" action="/search/" method="get" role="search">
-                <label class="screen-reader-text" for="site-search">Search this site</label>
-                <input id="site-search" data-site-search name="q" type="search" placeholder="Search..." autocomplete="off" />
-                <button type="submit">Search</button>
-              </form>
-            </section>
-
-            <section class="widget">
-              <h2>Recent Posts</h2>
-              <ul>
-                {recent.map((post) => <li><a href={postPath(post)}>{post.data.title}</a></li>)}
-              </ul>
-            </section>
-
-            <section class="widget">
-              <h2>Categories</h2>
-              <ul>
-                {[...categoryCounts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => (
-                  <li><a href={`/category/${slugify(name)}/`}>{name}</a> <span>({count})</span></li>
-                ))}
-              </ul>
-            </section>
-
-            <section class="widget">
-              <h2>Archives</h2>
-              <ul>
-                {[...archiveCounts.entries()].map(([key, entry]) => (
-                  <li><a href={`/archives/#${key}`}>{formatMonth(entry.date)}</a> <span>({entry.count})</span></li>
-                ))}
-              </ul>
-            </section>
-
-            <section class="widget">
-              <h2>Meta</h2>
-              <ul>
-                <li><a href="/rss.xml">Entries feed</a></li>
-                <li><a href="https://astro.build/">Astro</a></li>
-              </ul>
-            </section>
-          </aside>
-        )}
+        {!noSidebar && <Sidebar />}
       </div>
 
       <footer class="site-footer">
@@ -196,94 +78,5 @@ const schema = type === 'article'
         <p>Proudly powered by <a href="https://astro.build/">Astro</a>.</p>
       </footer>
     </div>
-
-    <script>
-      import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
-
-      const root = document.documentElement;
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
-
-      function savedTheme() {
-        try {
-          const value = localStorage.getItem('theme');
-          return value === 'light' || value === 'dark' ? value : null;
-        } catch {
-          return null;
-        }
-      }
-
-      function currentTheme() {
-        return savedTheme() ?? (systemTheme.matches ? 'dark' : 'light');
-      }
-
-      function updateThemeButton() {
-        const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-        if (!themeButton) return;
-        const next = currentTheme() === 'dark' ? 'light' : 'dark';
-        themeButton.textContent = next === 'dark' ? '☾' : '☀';
-        themeButton.ariaLabel = `Switch to ${next} mode`;
-        themeButton.title = `Switch to ${next} mode`;
-      }
-
-      function initializePage() {
-        const themeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-        updateThemeButton();
-        if (themeButton) {
-          themeButton.onclick = () => {
-            const next = currentTheme() === 'dark' ? 'light' : 'dark';
-            root.dataset.theme = next;
-            try {
-              localStorage.setItem('theme', next);
-            } catch {}
-            updateThemeButton();
-          };
-        }
-
-        document.querySelectorAll<HTMLElement>('.post-content pre').forEach((pre) => {
-          const code = pre.querySelector('code');
-          if (!code || pre.querySelector('.copy-code')) return;
-          const button = document.createElement('button');
-          button.className = 'copy-code';
-          button.type = 'button';
-          button.textContent = 'Copy';
-          button.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(code.textContent ?? '');
-            button.textContent = 'Copied';
-            window.setTimeout(() => (button.textContent = 'Copy'), 1500);
-          });
-          pre.append(button);
-        });
-
-        document.querySelectorAll<HTMLElement>('.post-content :is(h2, h3)[id]').forEach((heading) => {
-          if (heading.querySelector('.heading-link')) return;
-          const link = document.createElement('a');
-          link.className = 'heading-link';
-          link.href = `#${heading.id}`;
-          link.textContent = '#';
-          link.setAttribute('aria-label', `Link to ${heading.textContent}`);
-          heading.append(link);
-        });
-      }
-
-      document.addEventListener('astro:before-swap', (event) => {
-        const theme = root.dataset.theme;
-        if (theme === 'light' || theme === 'dark') {
-          (event as TransitionBeforeSwapEvent).newDocument.documentElement.dataset.theme = theme;
-        }
-      });
-
-      document.addEventListener('astro:page-load', initializePage);
-
-      systemTheme.addEventListener('change', () => {
-        if (!savedTheme()) updateThemeButton();
-      });
-
-      document.addEventListener('keydown', (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-          event.preventDefault();
-          document.querySelector<HTMLInputElement>('[data-site-search]')?.focus();
-        }
-      });
-    </script>
   </body>
 </html>

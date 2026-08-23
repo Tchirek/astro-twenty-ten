@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import { formatMonth, monthKey, postPath, published, slugify, sortPosts } from '../lib/blog';
+
+const posts = sortPosts((await getCollection('blog')).filter(published));
+const recent = posts.slice(0, 5);
+
+const categoryCounts = new Map<string, number>();
+for (const category of posts.flatMap((post) => post.data.categories)) {
+  categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+}
+
+const archiveCounts = new Map<string, { date: Date; count: number }>();
+for (const post of posts) {
+  const key = monthKey(post.data.date);
+  const current = archiveCounts.get(key);
+  archiveCounts.set(key, { date: post.data.date, count: (current?.count ?? 0) + 1 });
+}
+---
+
+<aside class="sidebar" aria-label="Blog sidebar">
+  <section class="widget">
+    <h2>Search</h2>
+    <form class="search-form" action="/search/" method="get" role="search">
+      <label class="screen-reader-text" for="site-search">Search this site</label>
+      <input id="site-search" data-site-search name="q" type="search" placeholder="Search..." autocomplete="off" />
+      <button type="submit">Search</button>
+    </form>
+  </section>
+
+  <section class="widget">
+    <h2>Recent Posts</h2>
+    <ul>
+      {recent.map((post) => <li><a href={postPath(post)}>{post.data.title}</a></li>)}
+    </ul>
+  </section>
+
+  <section class="widget">
+    <h2>Categories</h2>
+    <ul>
+      {[...categoryCounts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => (
+        <li><a href={`/category/${slugify(name)}/`}>{name}</a> <span>({count})</span></li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="widget">
+    <h2>Archives</h2>
+    <ul>
+      {[...archiveCounts.entries()].map(([key, entry]) => (
+        <li><a href={`/archives/#${key}`}>{formatMonth(entry.date)}</a> <span>({entry.count})</span></li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="widget">
+    <h2>Meta</h2>
+    <ul>
+      <li><a href="/rss.xml">Entries feed</a></li>
+      <li><a href="https://astro.build/">Astro</a></li>
+    </ul>
+  </section>
+</aside>
