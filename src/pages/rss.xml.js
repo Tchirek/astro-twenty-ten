@@ -17,6 +17,6 @@ export async function GET(context) {
       link: postPath(post),
       categories: [...post.data.categories, ...post.data.tags],
     })),
-    customData: `<language>${siteConfig.language}</language>`,
+    customData: `<language>${siteConfig.language}</language><copyright>${siteConfig.footer.prefix} ${siteConfig.footer.label}</copyright>`,
   });
 }
