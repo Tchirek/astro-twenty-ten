@@ -30,7 +30,8 @@ test('rehype transform keeps internal links and annotates text external links', 
   assert.equal(external.properties?.href, 'https://astro.build/');
   assert.equal(external.properties?.target, '_blank');
   assert.deepEqual(external.properties?.rel, ['external', 'noopener']);
-  assert.equal(external.children?.at(-1)?.children?.[0].value, '↗');
+  assert.equal(external.children?.at(-2)?.children?.[0].value, '↗');
+  assert.equal(external.children?.at(-1)?.children?.[0].value, ' (opens in a new tab)');
   assert.equal(imageExternal.properties?.target, '_blank');
   assert.equal(imageExternal.children?.length, 1);
 });

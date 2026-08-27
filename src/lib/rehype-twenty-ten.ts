@@ -78,14 +78,24 @@ export default function rehypeTwentyTen({ site }: Options) {
           properties.target = '_blank';
           addTokens(node, 'rel', ['external', 'noopener']);
           addTokens(node, 'className', ['external-link']);
-          if (!contains(node, 'img') && !node.children?.some((child) => tokens(child.properties?.className).includes('external-link-mark'))) {
+          if (!contains(node, 'img')) {
             node.children ??= [];
-            node.children.push({
-              type: 'element',
-              tagName: 'span',
-              properties: { className: ['external-link-mark'], ariaHidden: 'true' },
-              children: [{ type: 'text', value: '↗' }],
-            });
+            if (!node.children.some((child) => tokens(child.properties?.className).includes('external-link-mark'))) {
+              node.children.push({
+                type: 'element',
+                tagName: 'span',
+                properties: { className: ['external-link-mark'], ariaHidden: 'true' },
+                children: [{ type: 'text', value: '↗' }],
+              });
+            }
+            if (!node.children.some((child) => tokens(child.properties?.className).includes('screen-reader-text'))) {
+              node.children.push({
+                type: 'element',
+                tagName: 'span',
+                properties: { className: ['screen-reader-text'] },
+                children: [{ type: 'text', value: ' (opens in a new tab)' }],
+              });
+            }
           }
         }
       }
