@@ -5,11 +5,11 @@
   --body-text: #666;
   --content-text: #333;
   --heading: #000;
-  --muted: #777;
+  --muted: #6b6b6b;
   --border: #e7e7e7;
   --link: #06c;
   --visited: #743399;
-  --link-hover: #ff4b33;
+  --link-hover: #c93824;
   --nav: #000;
   --nav-text: #aaa;
   --field: #f9f9f9;
@@ -108,7 +108,7 @@ a:visited {
 
 a:hover,
 a:active {
-  color: #ff4b33;
+  color: #c93824;
   color: var(--link-hover);
 }
 
@@ -331,14 +331,14 @@ h6 {
 
 .post-summary h2 a:hover,
 .post-title a:hover {
-  color: #ff4b33;
+  color: #c93824;
   color: var(--link-hover);
 }
 
 .post-meta,
 .entry-utility,
 .archive-date {
-  color: #777;
+  color: #6b6b6b;
   color: var(--muted);
   font: 12px/18px 'Helvetica Neue', Arial, Helvetica, 'Nimbus Sans L', sans-serif;
 }
@@ -457,7 +457,7 @@ kbd {
   padding: 18px 0;
   background: #fff;
   background: var(--surface);
-  color: #777;
+  color: #6b6b6b;
   color: var(--muted);
 }
 
@@ -530,45 +530,10 @@ kbd {
 
 .post-content blockquote {
   padding: 0 3em;
-  color: #777;
+  color: #6b6b6b;
   color: var(--muted);
   font-family: Georgia, 'Bitstream Charter', 'Noto Serif CJK TC', 'Noto Serif CJK SC', 'Yu Mincho', PMingLiU, SimSun, serif;
   font-style: italic;
-}
-
-.post-content > :not(pre)::selection,
-.post-content li::selection {
-  color: #111;
-}
-
-.post-content > :not(pre):nth-child(6n + 1)::selection,
-.post-content li:nth-child(6n + 1)::selection {
-  background-color: light-dark(#a3c4d9, #4a7c9e);
-}
-
-.post-content > :not(pre):nth-child(6n + 2)::selection,
-.post-content li:nth-child(6n + 2)::selection {
-  background-color: light-dark(#c3b2d9, #8064a0);
-}
-
-.post-content > :not(pre):nth-child(6n + 3)::selection,
-.post-content li:nth-child(6n + 3)::selection {
-  background-color: light-dark(#e8afae, #b5615f);
-}
-
-.post-content > :not(pre):nth-child(6n + 4)::selection,
-.post-content li:nth-child(6n + 4)::selection {
-  background-color: light-dark(#e8c39a, #b8804a);
-}
-
-.post-content > :not(pre):nth-child(6n + 5)::selection,
-.post-content li:nth-child(6n + 5)::selection {
-  background-color: light-dark(#e3d89c, #b8a64c);
-}
-
-.post-content > :not(pre):nth-child(6n + 6)::selection,
-.post-content li:nth-child(6n + 6)::selection {
-  background-color: light-dark(#a8c8a2, #5e8f5a);
 }
 
 .post-content :not(pre) > code {
@@ -678,7 +643,7 @@ kbd {
 
 .content-figure figcaption {
   margin-top: 6px;
-  color: #777;
+  color: #6b6b6b;
   color: var(--muted);
   font: italic 12px/18px Georgia, 'Bitstream Charter', serif;
 }
@@ -779,6 +744,17 @@ rt {
 }
 
 .nav-older {
+.comments {
+  display: none;
+  clear: both;
+}
+
+.comments-fallback {
+  margin: 24px 0 36px;
+  color: #6b6b6b;
+  color: var(--muted);
+}
+
   float: right;
   text-align: right;
 }
@@ -833,7 +809,7 @@ rt {
 
 .search-results p {
   margin: 2px 0 20px;
-  color: #777;
+  color: #6b6b6b;
   color: var(--muted);
 }
 
