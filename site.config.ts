@@ -41,13 +41,16 @@ export function defineSiteConfig(config: SiteConfig): SiteConfig {
   return config;
 }
 
+const siteUrl = 'https://blog.tchirek.top';
+
 export default defineSiteConfig({
-  title: 'Twenty Ten Notes',
-  description: 'Notes on software, systems, and the small things learned along the way.',
-  site: 'https://example.com',
+  title: 'Tchirek Afra',
+  description: "Tchirek Afra's notes on software, systems, and the small things learned along the way.",
+  site: siteUrl,
   language: 'en',
   author: {
-    name: 'Demo Author',
+    name: 'Tchirek Afra',
+    url: siteUrl,
   },
   navigation: [
     { label: 'Home', href: '/' },
@@ -66,8 +69,8 @@ export default defineSiteConfig({
     codeCopy: true,
   },
   footer: {
-    prefix: 'Proudly powered by',
-    label: 'Astro',
-    href: 'https://astro.build/',
+    prefix: 'Copyleft 🄯 2024-2026 Tchirek Afra. Licensed under',
+    label: 'CC BY-NC-SA 4.0',
+    href: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
   },
 });

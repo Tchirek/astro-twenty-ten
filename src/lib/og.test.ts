@@ -11,7 +11,7 @@ test('OG SVG wraps long titles and escapes content', () => {
     title: 'Astro & the <old> Web',
     date: 'August 23, 2026',
     categories: ['Web'],
-    siteName: 'Twenty Ten Notes',
+    siteName: 'Tchirek Afra',
   });
   assert.match(svg, /Astro &amp; the &lt;old&gt; Web/);
   assert.match(svg, /TWENTY TEN · MODERN ASTRO EDITION/);

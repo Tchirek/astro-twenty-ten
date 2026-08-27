@@ -26,7 +26,7 @@ for (const post of posts) {
     <h2>Search</h2>
     <form class="search-form" action="/search/" method="get" role="search">
       <label class="screen-reader-text" for="site-search">Search this site</label>
-      <input id="site-search" data-site-search name="q" type="search" placeholder="Search..." autocomplete="off" />
+      <input id="site-search" data-site-search name="q" type="search" placeholder={`Search ${siteConfig.title}...`} autocomplete="off" />
       <button type="submit">Search</button>
     </form>
   </section>}

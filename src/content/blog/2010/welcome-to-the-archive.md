@@ -11,6 +11,8 @@ tags:
 permalink: "/2010/06/18/welcome-to-the-archive/"
 ---
 
+> Demonstration content: this fictional post is retained as a theme fixture.
+
 Every useful archive starts with a first note. This site is for things I want to find again: commands that saved an afternoon, explanations that finally clicked, and the occasional observation from outside the terminal.
 
 ## What belongs here

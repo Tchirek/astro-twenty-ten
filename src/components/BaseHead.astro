@@ -8,6 +8,7 @@ interface Props {
   canonical?: string;
   image?: string;
   type?: 'website' | 'article';
+  author?: string;
   publishedTime?: Date;
   updatedTime?: Date;
 }
@@ -19,6 +20,7 @@ const {
   canonical,
   image = headerImage,
   type = 'website',
+  author,
   publishedTime,
   updatedTime,
 } = Astro.props;
@@ -27,6 +29,7 @@ const pageTitle = title ? `${title} | ${siteConfig.title}` : siteConfig.title;
 const site = Astro.site ?? new URL(siteConfig.site);
 const canonicalUrl = new URL(canonical ?? Astro.url.pathname, site).href;
 const imageUrl = new URL(image, site).href;
+const authorName = author ?? siteConfig.author.name;
 const schema = type === 'article'
   ? {
       '@context': 'https://schema.org',
@@ -36,7 +39,11 @@ const schema = type === 'article'
       image: imageUrl,
       datePublished: publishedTime?.toISOString(),
       dateModified: (updatedTime ?? publishedTime)?.toISOString(),
-      author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+      author: {
+        '@type': 'Person',
+        name: authorName,
+        ...(authorName === siteConfig.author.name && siteConfig.author.url ? { url: siteConfig.author.url } : {}),
+      },
       mainEntityOfPage: canonicalUrl,
       inLanguage: siteConfig.language,
     }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
+import siteConfig from '../site.config.ts';
 
 const read = (path) => readFile(new URL(`../dist/${path}`, import.meta.url), 'utf8');
 
@@ -27,11 +28,19 @@ test('production build emits durable discovery and taxonomy routes', async () =>
 });
 
 test('canonical, feeds, search, and OG metadata share the permalink', async () => {
-  const permalink = 'https://example.com/2026/08/23/twenty-ten-on-astro/';
+  const permalink = 'https://blog.tchirek.top/2026/08/23/twenty-ten-on-astro/';
   const article = await read('2026/08/23/twenty-ten-on-astro/index.html');
   assert.match(article, new RegExp(`<link rel="canonical" href="${permalink}">`));
-  assert.match(article, /content="https:\/\/example\.com\/og\/twenty-ten-on-astro\.png"/);
+  assert.match(article, /content="https:\/\/blog\.tchirek\.top\/og\/twenty-ten-on-astro\.png"/);
   assert.match(article, /target="_blank" rel="external noopener" class="external-link"/);
+
+  const schemaMatch = article.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
+  const visibleAuthor = article.match(/<span class="meta-separator">by<\/span>\s*([^<]+?)(?=\s*·|<\/p>)/);
+  assert.ok(schemaMatch);
+  assert.ok(visibleAuthor);
+  const schema = JSON.parse(schemaMatch[1]);
+  assert.equal(schema.author.name, visibleAuthor[1].trim());
+  assert.equal(schema.author.url, schema.author.name === siteConfig.author.name ? siteConfig.author.url : undefined);
 
   assert.match(await read('rss.xml'), new RegExp(permalink));
   assert.match(await read('atom.xml'), new RegExp(permalink));

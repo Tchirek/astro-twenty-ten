@@ -40,6 +40,7 @@ const minutes = readingMinutes(post.body ?? '');
   image={post.data.featuredImage ?? postOgPath(post)}
   type="article"
   publishedTime={post.data.date}
+  author={post.data.author}
   updatedTime={post.data.updated}
 >
   <article>

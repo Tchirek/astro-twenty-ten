@@ -1,12 +1,13 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import siteConfig from '../../site.config.ts';
 ---
 
-<SiteLayout title="About" description="About this quietly modern Twenty Ten-inspired demo weblog.">
+<SiteLayout title="About" description={`About ${siteConfig.author.name} and this Twenty Ten-inspired weblog.`}>
   <article>
     <h1 class="page-title">About</h1>
     <div class="post-content">
-      <p>This is a fictional demo notebook for software, systems, and the details worth remembering.</p>
+      <p>This is {siteConfig.author.name}’s personal notebook for software, systems, and the details worth remembering.</p>
       <p>The design keeps the calm, text-first character of WordPress Twenty Ten while the site underneath is static Astro: Markdown files, durable URLs, and very little client-side JavaScript.</p>
       <h2 id="colophon">Colophon</h2>
       <p>Typeset with system fonts, highlighted by Shiki, and built as plain HTML and CSS. Its proportions and header treatment faithfully follow the original Twenty Ten theme.</p>
