@@ -44,7 +44,11 @@ test('canonical, feeds, search, and OG metadata share the permalink', async () =
 
   assert.match(await read('rss.xml'), new RegExp(permalink));
   assert.match(await read('atom.xml'), new RegExp(permalink));
-  assert.match(await read('search/index.html'), /"postings":/);
+  const search = await read('search/index.html');
+  const searchIndex = search.match(/<script id="search-index" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(searchIndex);
+  assert.match(searchIndex, /"postings":/);
+  assert.ok(Buffer.byteLength(searchIndex) <= 100 * 1024, 'inline search index exceeds 100 KiB');
 
   const png = await readFile(new URL('../dist/og/twenty-ten-on-astro.png', import.meta.url));
   assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');

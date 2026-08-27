@@ -12,7 +12,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check && npm --prefix services/sicsic-comment-ui run check",
-    "lint": "astro check",
+    "lint": "eslint .",
     "preview": "astro preview",
     "comments:build": "npm --prefix services/sicsic-comment-ui run build",
     "test": "node --test services/sicsic-comment-ui/test/api.test.mjs services/sicsic-comment-ui/test/config.test.mjs src/lib/blog.test.ts src/lib/og.test.ts src/lib/rehype-twenty-ten.test.ts src/lib/search.test.ts",
@@ -32,7 +32,12 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "^1.62.1",
-    "typescript": "^6.0.3"
+    "eslint": "10.9.1",
+    "eslint-plugin-astro": "1.7.0",
+    "globals": "16.5.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "8.68.0"
   }
 }
