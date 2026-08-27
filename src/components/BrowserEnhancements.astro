@@ -4,17 +4,14 @@ import siteConfig from '../../site.config.ts';
 
 {siteConfig.appearance.darkMode && <script is:inline>
   try {
+    // eslint-disable-next-line no-var -- This pre-module fallback also runs in legacy browsers.
     var theme = localStorage.getItem('theme');
     if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
-  } catch (error) {}
+  } catch (_error) {}
 </script>}
 <script>
-  import type { TransitionBeforePreparationEvent } from 'astro:transitions/client';
-
   const root = document.documentElement;
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let revealAtTop = false;
 
   function savedTheme() {
     try {
@@ -70,27 +67,9 @@ import siteConfig from '../../site.config.ts';
       });
     }
 
-    if (revealAtTop && !reducedMotion.matches) {
-      document.querySelector<HTMLElement>('.page-grid')?.animate?.(
-        [
-          { opacity: 0.82, transform: 'translateY(10px)' },
-          { opacity: 1, transform: 'translateY(0)' },
-        ],
-        { duration: 180, easing: 'ease-out' },
-      );
-    }
-    revealAtTop = false;
   }
 
-  document.addEventListener('astro:before-preparation', (event) => {
-    const navigation = event as TransitionBeforePreparationEvent;
-    revealAtTop = navigation.navigationType !== 'traverse'
-      && navigation.sourceElement instanceof HTMLAnchorElement
-      && window.scrollY > 24
-      && (navigation.from.pathname !== navigation.to.pathname || navigation.from.search !== navigation.to.search);
-  });
-
-  document.addEventListener('astro:page-load', setupPage);
+  setupPage();
 
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -111,7 +90,7 @@ import siteConfig from '../../site.config.ts';
     }
   });
 
-  document.body.hasAttribute('data-search-shortcut') && document.addEventListener('keydown', (event) => {
+  if (document.body.hasAttribute('data-search-shortcut')) document.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       document.querySelector<HTMLInputElement>('[data-site-search]')?.focus();

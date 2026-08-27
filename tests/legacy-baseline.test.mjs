@@ -38,7 +38,7 @@ test('core documents contain readable HTML independently of scripts', async () =
     assert.match(withoutScripts, /<nav class="primary-nav" aria-label="Primary navigation">/);
     assert.match(withoutScripts, new RegExp(text));
     assert.match(html, /<link rel="stylesheet" href="\/_astro\/[^"?]+\.css">/);
-    assert.match(html, /<meta name="astro-view-transitions-enabled" content="true">/);
+    assert.doesNotMatch(html, /astro-view-transitions-enabled|astro-view-transitions-fallback/);
   }
 });
 
@@ -47,6 +47,9 @@ test('legacy CSS and image fallbacks precede modern enhancements', async () => {
   const css = (await Promise.all(assets.filter((name) => name.endsWith('.css')).map((name) => read(`_astro/${name}`)))).join('\n');
   const article = await read('2026/08/23/twenty-ten-on-astro/index.html');
 
+  assert.match(css, /\.site-shell\s*\{[^}]*box-sizing:\s*content-box;[^}]*width:\s*940px;/);
+  assert.match(css, /\.header-picture,\s*\.header-art\s*\{[^}]*width:\s*940px;/);
+  assert.match(css, /\.header-art\s*\{[^}]*height:\s*198px;/);
   assert.match(css, /#content\s*\{[^}]*float:\s*left;[^}]*width:\s*640px;/);
   assert.match(css, /\.sidebar\s*\{[^}]*float:\s*right;[^}]*width:\s*220px;/);
   assert.match(css, /@supports \(display:\s*grid\)/);
@@ -55,4 +58,8 @@ test('legacy CSS and image fallbacks precede modern enhancements', async () => {
   assert.match(css, /article,\s*aside,\s*footer,\s*header,\s*main,\s*nav,\s*picture,\s*section\s*\{\s*display:\s*block;/);
   assert.match(article, /<!--\[if lt IE 9\]><script>/);
   assert.match(article, /<picture class="header-picture"><source[^>]+type="image\/webp"[^>]*><img src="[^"]+\.png"/);
+  assert.match(article, /<section id="comments" class="comments"[^>]+data-comment-subject="blog:\/2026\/08\/23\/twenty-ten-on-astro\/"/);
+  assert.doesNotMatch(article, /<iframe|comments-frame|data-comments-src/);
+  assert.match(css, /\.comments\s*\{\s*display:\s*none;/);
+  assert.match(css, /@supports \(display:\s*grid\)[\s\S]*?\.comments\s*\{\s*display:\s*block;/);
 });

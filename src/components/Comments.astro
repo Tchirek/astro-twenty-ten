@@ -1,0 +1,36 @@
+---
+import '../styles/comments.css';
+
+interface Props { subject: string }
+const { subject } = Astro.props;
+---
+
+<section id="comments" class="comments" aria-label="Comments" lang="zh-TW" data-comment-subject={subject}>
+  <noscript><p class="comments-fallback">JavaScript is required to load comments.</p></noscript>
+</section>
+
+<script>
+  import { init } from '../../services/sicsic-comment-ui/src/core';
+
+  const el = document.querySelector<HTMLElement>('[data-comment-subject]');
+  if (el) {
+    const comments = init({
+      el,
+      serverURL: 'https://api.pics.tchirek.top',
+      locale: 'zh-TW',
+      storageNamespace: 'sicsic_blog',
+      sourceRepoUrl: 'https://comments.sicnu.pics.tchirek.top/sicsic-comment-ui-source.tar.gz',
+    });
+    const load = () => comments.update({ subject: el.dataset.commentSubject });
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        load();
+      }, { rootMargin: '300px 0px' });
+      observer.observe(el);
+    } else {
+      load();
+    }
+  }
+</script>

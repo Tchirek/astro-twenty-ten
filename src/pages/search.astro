@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { postPath, published, sortPosts } from '../lib/blog';
 import { buildSearchIndex } from '../lib/search';
+import siteConfig from '../../site.config.ts';
 
 const posts = sortPosts((await getCollection('blog')).filter(published));
 // ponytail: the full index ships with the page; split it into a static asset if the corpus makes this page measurably heavy.
@@ -17,12 +18,12 @@ const searchIndex = buildSearchIndex(posts.map((post) => ({
 const serializedIndex = JSON.stringify(searchIndex).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 ---
 
-<SiteLayout title="Search" description="Search every published post.">
+<SiteLayout title="Search" description={`Search every published post on ${siteConfig.title}.`}>
   <section class="search-page">
     <h1 class="page-title">Search</h1>
     <form id="search-page-form" action="/search/" method="get" role="search">
       <label class="screen-reader-text" for="search-query">Search every post</label>
-      <input id="search-query" data-site-search name="q" type="search" placeholder="Search Twenty Ten Notes..." autocomplete="off" />
+      <input id="search-query" data-site-search name="q" type="search" placeholder={`Search ${siteConfig.title}...`} autocomplete="off" />
       <button type="submit">Search</button>
     </form>
     <p id="search-status" role="status">Enter a word or phrase.</p>
@@ -86,6 +87,6 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, '\\u003c').rep
       if (new URLSearchParams(location.search).has('focus')) searchInput.focus();
     }
 
-    document.addEventListener('astro:page-load', setupSearch);
+    setupSearch();
   </script>
 </SiteLayout>

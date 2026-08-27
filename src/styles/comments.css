@@ -1,0 +1,343 @@
+/* Blog-owned Twenty Ten presentation. SicSic core does not ship a visual theme. */
+.comments {
+  /* The old iframe breakpoints were based on comment width, not page width. */
+  container-type: inline-size;
+  --text: #333;
+  --heading: #000;
+  --panel: #fff;
+  --line: #e7e7e7;
+  --field-border: #ccc;
+  --field: #f9f9f9;
+  --field-focus: #06c;
+  --muted: #777;
+  --quiet: #777;
+  --faint: #777;
+  --hover-text: #ff4b33;
+  --hover-bg: transparent;
+  --submit-text: #333;
+  --submit-bg: #f7f7f7;
+  --pill-bg: #f7f7f7;
+  --markdown: #333;
+  --link: #06c;
+  --code-bg: #f7f7f7;
+  --quote-line: #e7e7e7;
+  --editor-border: #dcdcde;
+  --editor-ui: #fff;
+  --editor-muted: #757575;
+  --editor-disabled: #a7aaad;
+  --editor-hover: #f0f0f0;
+  --avatar-fg-lightness: 30%;
+  --avatar-fg-alpha: 0.95;
+  --avatar-bg-lightness: 90%;
+  --avatar-bg-alpha: 0.76;
+  --danger: rgba(220, 38, 38, 0.76);
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  color: var(--text);
+  background: transparent;
+  font: 16px/24px Georgia, "Bitstream Charter", SimSun, serif;
+  font-synthesis: auto;
+}
+
+:root[data-dark-mode][data-theme='dark'] .comments {
+  --text: #d9ddd9;
+  --heading: #f5f5f0;
+  --panel: #1a1d1a;
+  --line: #3b413c;
+  --field-border: #555d57;
+  --field: #202420;
+  --field-focus: #8ec5ff;
+  --muted: #a5ada7;
+  --quiet: #a5ada7;
+  --faint: #a5ada7;
+  --hover-text: #ff9c89;
+  --submit-text: #d9ddd9;
+  --submit-bg: #242824;
+  --pill-bg: #242824;
+  --markdown: #d9ddd9;
+  --link: #8ec5ff;
+  --code-bg: #242824;
+  --quote-line: #3b413c;
+  --editor-border: #555d57;
+  --editor-ui: #1a1d1a;
+  --editor-muted: #a5ada7;
+  --editor-disabled: #767d78;
+  --editor-hover: #242824;
+  --avatar-fg-lightness: 94%;
+  --avatar-fg-alpha: 0.9;
+  --avatar-bg-lightness: 46%;
+  --avatar-bg-alpha: 0.34;
+  --danger: rgba(255, 106, 106, 0.72);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-dark-mode]:not([data-theme]) .comments {
+    --text: #d9ddd9;
+    --heading: #f5f5f0;
+    --panel: #1a1d1a;
+    --line: #3b413c;
+    --field-border: #555d57;
+    --field: #202420;
+    --field-focus: #8ec5ff;
+    --muted: #a5ada7;
+    --quiet: #a5ada7;
+    --faint: #a5ada7;
+    --hover-text: #ff9c89;
+    --submit-text: #d9ddd9;
+    --submit-bg: #242824;
+    --pill-bg: #242824;
+    --markdown: #d9ddd9;
+    --link: #8ec5ff;
+    --code-bg: #242824;
+    --quote-line: #3b413c;
+    --editor-border: #555d57;
+    --editor-ui: #1a1d1a;
+    --editor-muted: #a5ada7;
+    --editor-disabled: #767d78;
+    --editor-hover: #242824;
+    --avatar-fg-lightness: 94%;
+    --avatar-fg-alpha: 0.9;
+    --avatar-bg-lightness: 46%;
+    --avatar-bg-alpha: 0.34;
+    --danger: rgba(255, 106, 106, 0.72);
+  }
+}
+
+.comments [hidden] { display: none !important; }
+.comments * { scrollbar-width: none; }
+.comments *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.comments button, .comments input, .comments textarea { font: inherit; }
+.comments button { cursor: pointer; }
+.comments input, .comments textarea { outline: none; }
+.comments button:focus-visible { outline: auto; outline-offset: 0; }
+.comments > header { order: 1; padding: 24px 0; }
+.comments .comment-title, .comments .reply-title {
+  color: var(--heading);
+  font: 700 20px/30px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif;
+}
+.comments .comment-title { user-select: none; }
+.comments .header-actions { display: none; }
+.comments .comment-list { order: 2; padding: 0; }
+.comments .thread { margin: 0 0 24px; border-bottom: 1px solid var(--line); }
+.comments .thread:last-child { margin-bottom: 0; border-bottom: 0; }
+.comments .comment { position: relative; min-height: 40px; padding: 0 0 0 56px; line-height: 24px; }
+.comments .comment.reply { margin: 0 0 0 56px; }
+.comments .comment-avatar {
+  position: absolute; top: 4px; left: 0; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; border-radius: 0;
+  color: hsla(var(--avatar-hue), 38%, var(--avatar-fg-lightness), var(--avatar-fg-alpha));
+  background: hsla(var(--avatar-hue), 38%, var(--avatar-bg-lightness), var(--avatar-bg-alpha));
+  font-size: 16px; font-weight: 700; line-height: 1; user-select: none;
+}
+.comments .avatar-initial { line-height: 1; }
+.comments .avatar-img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.comments .avatar-badge { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; line-height: 0; pointer-events: none; }
+.comments .avatar-badge svg { display: block; width: 14px; height: 14px; }
+.comments .reply .avatar-badge { right: -2px; bottom: -2px; width: 12px; height: 12px; }
+.comments .reply .avatar-badge svg { width: 12px; height: 12px; }
+.comments .comment-main { min-width: 0; }
+.comments .comment-head .comment-name { color: var(--heading); font: 700 16px/24px Georgia, "Bitstream Charter", SimSun, serif; }
+.comments .comment-says { font-style: italic; }
+.comments .comment-head time { display: block; margin: 0 0 18px; color: var(--muted); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .comment-os { display: inline-flex; align-items: center; margin-left: 6px; color: var(--muted); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .markdown { color: var(--markdown); font: 16px/24px Georgia, "Bitstream Charter", SimSun, serif; overflow-wrap: break-word; }
+.comments .markdown p { margin: 0 0 24px; }
+.comments .markdown p:last-child { margin-bottom: 6px; }
+.comments .markdown a { color: var(--link); text-decoration: underline; }
+.comments .markdown img { display: block; max-width: 100%; max-height: 320px; margin-top: 8px; }
+.comments .markdown pre, .comments .markdown code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.comments .markdown pre { overflow: auto; padding: 10px; background: var(--code-bg); }
+.comments .markdown blockquote { margin: 8px 0; padding-left: 10px; border-left: 2px solid var(--quote-line); }
+.comments .comment-actions { display: flex; align-items: center; min-height: 24px; margin: 0; padding: 0 0 24px; gap: 8px; font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .comment-actions button { padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-size: 12px; line-height: 24px; }
+.comments .comment-actions button:hover { color: var(--hover-text); }
+.comments .like-button { display: inline-flex; align-items: center; justify-content: center; gap: 3px; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; }
+.comments .like-button svg { display: none; }
+.comments .like-button::before { content: attr(aria-label); }
+.comments .like-button span { font-variant-numeric: tabular-nums; }
+.comments .composer { order: 3; margin: 0; padding: 0; overflow: visible; }
+.comments.has-comments .composer { margin-top: 24px; }
+.comments .reply-title { display: block; margin: 15px 0; }
+.comments .comment-form { width: 100%; overflow: visible; border: 1px solid var(--editor-border); background: var(--editor-ui); }
+.comments .editor-toolbar { height: 52px; display: flex; align-items: stretch; border-bottom: 1px solid var(--editor-border); background: var(--editor-ui); }
+.comments .toolbar-button { flex: none; width: 48px; height: 51px; display: grid; place-items: center; margin: 0; padding: 0; border: 0; border-right: 1px solid var(--editor-border); border-radius: 0; color: var(--heading); background: transparent; font: 16px/24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+.comments .toolbar-button:hover, .comments .toolbar-button:focus-visible { color: var(--heading); background: var(--editor-hover); }
+.comments .toolbar-button:focus-visible { outline: 2px solid var(--field-focus); outline-offset: -2px; }
+.comments .toolbar-bold strong { font-weight: 700; }
+.comments .toolbar-italic em { font-family: Georgia, "Bitstream Charter", SimSun, serif; font-size: 19px; }
+.comments .toolbar-spacer { flex: 1; }
+.comments .toolbar-preview { width: 60px; border-right: 0; border-left: 1px solid var(--editor-border); font-size: 14px; }
+.comments .field-label { display: block; color: var(--muted); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .composer:has(.nickname[hidden]) .nickname-label { display: none; }
+.comments .nickname { width: 100%; min-height: 38px; margin: 0; padding: 7px 9px; border: 1px solid var(--editor-border); border-radius: 2px; color: var(--text); background: var(--editor-ui); box-shadow: none; font: 14px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+.comments input:focus { border-color: var(--field-focus); }
+.comments .composer-identity { margin: 0; color: var(--muted); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .reply-target { width: 100%; margin: 0; padding: 8px 20px; border: 0; border-bottom: 1px solid var(--editor-border); border-radius: 0; color: var(--muted); background: var(--editor-hover); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; text-align: left; }
+.comments .editor-surface { position: relative; width: 100%; height: 152px; background: var(--editor-ui); }
+.comments textarea { width: 100%; height: 100%; min-height: 0; padding: 28px 20px 20px; border: 0; border-radius: 0; color: var(--text); background: var(--editor-ui); box-shadow: none; font: 16px/24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Microsoft YaHei", sans-serif; resize: none; }
+.comments textarea::placeholder { color: var(--editor-muted); opacity: 1; }
+.comments .preview { width: 100%; height: 100%; min-height: 0; overflow: auto; padding: 28px 20px 20px; background: var(--editor-ui); }
+.comments .composer-actions { position: relative; display: flex; align-items: center; height: 72px; min-height: 72px; margin: 0; padding: 16px; gap: 12px; border-top: 1px solid var(--editor-border); background: var(--editor-ui); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+.comments .composer-actions .status { flex: 1; min-width: 0; color: var(--editor-muted); font-size: 12px; text-align: right; }
+.comments .composer-options { position: relative; flex: none; width: 70px; height: 40px; }
+.comments .composer-options summary, .comments .submit { width: 70px; height: 40px; min-width: 70px; padding: 7px 20px; border: 1px solid var(--editor-border); border-radius: 4px; color: var(--heading); background: var(--editor-ui); font: 14px/24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+.comments .composer-options summary { display: grid; place-items: center; list-style: none; cursor: pointer; }
+.comments .composer-options summary::-webkit-details-marker { display: none; }
+.comments .composer-options-panel { position: absolute; z-index: 5; bottom: 48px; left: 0; width: min(280px, calc(100vw - 34px)); display: grid; gap: 8px; padding: 12px; border: 1px solid var(--editor-border); border-radius: 4px; background: var(--editor-ui); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); }
+.comments .composer-account-slot .account { width: auto; height: 32px; display: inline-flex; align-items: center; gap: 7px; padding: 4px 8px; border: 1px solid var(--editor-border); border-radius: 2px; color: var(--heading); background: var(--editor-ui); font: 13px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+.comments .account svg { width: 19px; height: 19px; fill: currentColor; }
+.comments .account-label { display: inline; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comments .disclose-os { display: inline-flex; align-items: center; gap: 6px; margin-left: 0; padding: 0; color: var(--muted); font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; user-select: none; cursor: pointer; }
+.comments .disclose-os input { width: 11px; height: 11px; margin: 0; border: 1px solid var(--editor-border); border-radius: 2px; background: var(--editor-ui); box-shadow: none; accent-color: var(--muted); }
+.comments .submit { flex: none; }
+.comments .submit:disabled { color: var(--editor-disabled); opacity: 1; cursor: default; }
+.comments .no-comments { display: none; }
+.comments .load-error { margin: 1em 0; padding: 24px 0; color: var(--quiet); text-align: left; font: 12px/18px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
+.comments .comment-edit { display: grid; gap: 8px; margin: 0 0 18px; }
+.comments .comment-edit textarea { min-height: 96px; padding: 8px; border: 1px solid var(--field-border); font: 16px/24px Georgia, "Bitstream Charter", SimSun, serif; resize: vertical; }
+.comments .comment-edit-actions { display: flex; gap: 8px; }
+.comments .comment-edit-actions button { padding: 3px 8px; border: 1px solid var(--field-border); border-radius: 0; color: var(--text); background: #f7f7f7; font: 12px/18px "Helvetica Neue", Arial, Helvetica, "Microsoft YaHei", sans-serif; }
+.comments .comment-edit-actions button:first-child { color: #fff; background: #1e1e1e; }
+.comments > footer { order: 4; height: 0; padding: 0; overflow: hidden; }
+.comments .comment-flash::before { content: ""; position: absolute; inset: 6px -8px; pointer-events: none; border-radius: 12px; background: rgba(96, 165, 250, 0.08); opacity: 0; transform: scaleY(0.96); animation: comment-flash 2.8s cubic-bezier(0.16, 1, 0.3, 1) 1; }
+@keyframes comment-flash { 0% { opacity: 0; transform: scaleY(0.96); } 24% { opacity: 0.72; } 66% { opacity: 0.34; } 100% { opacity: 0; transform: scaleY(1); } }
+
+@supports (display: grid) {
+  .comments[data-sicsic-integration] { display: flex; flex-direction: column; }
+}
+@container (max-width: 380px) {
+  .comments .toolbar-button { width: 42px; }
+  .comments .toolbar-preview { width: 54px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comments .comment-flash::before { animation: none; }
+}
+
+.comments .auth-overlay {
+  position: absolute;
+  padding: 12px;
+  background: transparent;
+  backdrop-filter: blur(1px);
+}
+
+.comments .auth-card {
+  width: min(390px, 100%);
+  max-height: calc(100% - 8px);
+  border: 1px solid var(--editor-border);
+  border-radius: 0;
+  background: var(--editor-ui);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Microsoft YaHei", sans-serif;
+}
+
+.comments .auth-card.auth-entry-card {
+  height: min(300px, calc(100vh - 24px));
+}
+
+.comments .auth-head {
+  padding: 10px 14px;
+  background: var(--editor-hover);
+}
+
+.comments .auth-head strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.comments .auth-close {
+  border-radius: 0;
+}
+
+.comments .auth-body {
+  gap: 9px;
+  padding: 12px 14px 14px;
+}
+
+.comments .auth-entry-card .auth-body,
+.comments .auth-entry-card .auth-pane {
+  gap: 6px;
+}
+
+.comments .auth-entry-card .auth-body {
+  padding: 8px 14px 10px;
+}
+
+.comments .auth-entry-card .auth-field > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.comments .auth-entry-card .auth-error:empty {
+  display: none;
+}
+
+.comments .auth-entry-card .auth-row {
+  min-height: 14px;
+}
+
+.comments .auth-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.comments .auth-tabs {
+  gap: 18px;
+  padding: 0;
+  border-bottom: 1px solid var(--editor-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.comments .auth-tab {
+  flex: none;
+  padding: 5px 1px 7px;
+  border-radius: 0;
+  font-size: 13px;
+}
+
+.comments .auth-tab.active {
+  border-bottom: 2px solid var(--heading);
+  background: transparent;
+  box-shadow: none;
+}
+
+.comments .auth-pane {
+  gap: 8px;
+}
+
+.comments .auth-field {
+  gap: 3px;
+}
+
+.comments .auth-field input,
+.comments .auth-select,
+.comments .auth-bio {
+  padding: 6px 8px;
+  border: 1px solid var(--editor-border);
+  border-radius: 2px;
+  background: var(--editor-ui);
+}
+
+.comments .auth-submit,
+.comments .auth-google {
+  padding: 7px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.comments .auth-submit {
+  color: #fff;
+  background: #1e1e1e;
+}
+
+.comments .auth-methods > .auth-divider { display: none; }

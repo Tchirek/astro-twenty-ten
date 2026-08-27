@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Aside from '../components/mdx/Aside.astro';
+import Comments from '../components/Comments.astro';
 import Details from '../components/mdx/Details.astro';
 import Figure from '../components/mdx/Figure.astro';
 import YouTube from '../components/mdx/YouTube.astro';
@@ -39,8 +40,8 @@ const minutes = readingMinutes(post.body ?? '');
   canonical={post.data.canonical ?? postPath(post)}
   image={post.data.featuredImage ?? postOgPath(post)}
   type="article"
-  publishedTime={post.data.date}
   author={post.data.author}
+  publishedTime={post.data.date}
   updatedTime={post.data.updated}
 >
   <article>
@@ -87,4 +88,6 @@ const minutes = readingMinutes(post.body ?? '');
       {older && <a class="nav-older" href={postPath(older)}>Older: {older.data.title} →</a>}
     </nav>
   )}
+
+  <Comments subject={`blog:${postPath(post)}`} />
 </SiteLayout>

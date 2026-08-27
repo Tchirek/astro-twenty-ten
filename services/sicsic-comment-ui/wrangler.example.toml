@@ -1,0 +1,15 @@
+name = "sicsic-comment-ui"
+main = "./src/worker.js"
+compatibility_date = "2026-06-04"
+preview_urls = true
+
+[assets]
+binding = "ASSETS"
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[vars]
+COMMENT_API_ORIGIN = "https://api.example.com"
+COMMENT_FRAME_ANCESTORS = "https://example.com"
+COMMENT_IMG_SRC = "https: data:"

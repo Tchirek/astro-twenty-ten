@@ -1,6 +1,5 @@
 ---
 import { getImage } from 'astro:assets';
-import { ClientRouter } from 'astro:transitions';
 import headerSource from '../assets/header-demo.png';
 import BaseHead from '../components/BaseHead.astro';
 import BrowserEnhancements from '../components/BrowserEnhancements.astro';
@@ -13,8 +12,8 @@ interface Props {
   description?: string;
   canonical?: string;
   image?: string;
-  author?: string;
   type?: 'website' | 'article';
+  author?: string;
   publishedTime?: Date;
   updatedTime?: Date;
   noSidebar?: boolean;
@@ -45,7 +44,7 @@ const [header, headerFallback] = await Promise.all([
 
 const { noSidebar = false, ...headProps } = Astro.props;
 const path = Astro.url.pathname;
-const activePath = (href: string) => href === '/' ? path === '/' : path.startsWith(href);
+const activePath = (href: string) => href === '/' ? path === '/' : path === href || path.startsWith(`${href.replace(/\/+$/, '')}/`);
 const legacyHtml5Shim = `<!--[if lt IE 9]><script>(function(d){var e='article aside footer header main nav picture section time'.split(' '),i=e.length;while(i--){d.createElement(e[i]);}}(document));</script><![endif]-->`;
 ---
 
@@ -53,7 +52,6 @@ const legacyHtml5Shim = `<!--[if lt IE 9]><script>(function(d){var e='article as
 <html lang={siteConfig.language} data-dark-mode={siteConfig.appearance.darkMode ? '' : undefined}>
   <head>
     <BaseHead {...headProps} headerImage={header.src} />
-    <ClientRouter fallback="swap" />
     <Fragment set:html={legacyHtml5Shim} />
     <BrowserEnhancements />
   </head>
@@ -99,8 +97,7 @@ const legacyHtml5Shim = `<!--[if lt IE 9]><script>(function(d){var e='article as
       </div>
 
       <footer class="site-footer">
-        <p class="footer-home"><a href="/">{siteConfig.title}</a></p>
-        <p class="footer-credit">{siteConfig.footer.prefix} <a class="external-link" href={siteConfig.footer.href} target="_blank" rel="external noopener">{siteConfig.footer.label}<span class="external-link-mark" aria-hidden="true">↗</span></a>.</p>
+        <p class="footer-credit">{siteConfig.footer.prefix} <a class="external-link" href={siteConfig.footer.href} target="_blank" rel="license external noopener">{siteConfig.footer.label}<span class="external-link-mark" aria-hidden="true">↗</span><span class="screen-reader-text"> (opens in a new tab)</span></a></p>
       </footer>
     </div>
   </body>

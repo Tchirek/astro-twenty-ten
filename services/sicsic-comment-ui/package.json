@@ -1,0 +1,23 @@
+{
+  "name": "sicsic-comment-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "check": "tsc --noEmit",
+    "test": "node --test test/api.test.mjs test/config.test.mjs",
+    "test:budget": "node --test test/bundle.test.mjs",
+    "build": "vite build && npm run source:archive",
+    "source:archive": "tar -czf dist/sicsic-comment-ui-source.tar.gz src test index.html package.json package-lock.json tsconfig.json vite.config.ts LICENSE NOTICE INTEGRATION.md MODIFICATIONS.md THREAT_MODEL.md .env.example wrangler.example.toml",
+    "deploy": "npx --yes wrangler@4.127.0 deploy --keep-vars"
+  },
+  "dependencies": {
+    "micromark": "4.0.2",
+    "micromark-extension-gfm": "3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.0.16"
+  }
+}

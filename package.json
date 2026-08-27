@@ -5,17 +5,19 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=22.19.0"
   },
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build",
-    "check": "astro check",
+    "build": "astro build",
+    "check": "astro check && npm --prefix services/sicsic-comment-ui run check",
     "lint": "astro check",
     "preview": "astro preview",
-    "test": "node --test src/lib/blog.test.ts src/lib/og.test.ts src/lib/rehype-twenty-ten.test.ts src/lib/search.test.ts",
+    "comments:build": "npm --prefix services/sicsic-comment-ui run build",
+    "test": "node --test services/sicsic-comment-ui/test/api.test.mjs services/sicsic-comment-ui/test/config.test.mjs src/lib/blog.test.ts src/lib/og.test.ts src/lib/rehype-twenty-ten.test.ts src/lib/search.test.ts",
     "test:routes": "node --test tests/routes.test.mjs tests/legacy-baseline.test.mjs",
+    "test:budget": "node --test services/sicsic-comment-ui/test/bundle.test.mjs tests/bundle-budget.test.mjs",
     "test:e2e": "playwright test tests/modern.spec.ts",
     "test:visual": "playwright test tests/visual.spec.ts --project=chromium",
     "test:visual:update": "playwright test tests/visual.spec.ts --project=chromium --update-snapshots"

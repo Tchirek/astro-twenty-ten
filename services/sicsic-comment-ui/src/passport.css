@@ -1,0 +1,118 @@
+/* Loaded only when the reader opens identity or a public profile. */
+.auth-methods { display: contents; }
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(17, 24, 39, 0.42); backdrop-filter: blur(2px);
+}
+.auth-card {
+  width: min(340px, 100%); max-height: calc(100% - 24px); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+.auth-card.auth-entry-card { height: min(430px, calc(100vh - 32px)); }
+.auth-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.auth-head strong { font-size: 14px; font-weight: 600; }
+.auth-close { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.auth-close:hover { background: var(--hover-bg); color: var(--hover-text); }
+.auth-body { display: grid; gap: 11px; padding: 14px 16px 16px; }
+.auth-tabs { display: flex; gap: 4px; padding: 3px; background: var(--pill-bg); border-radius: 10px; }
+.auth-tab { flex: 1; padding: 7px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.auth-tab.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+.auth-pane { display: grid; gap: 11px; }
+.auth-field { display: grid; gap: 5px; }
+.auth-field > span { font-size: 11px; color: var(--muted); }
+.auth-field input { padding: 9px 10px; font-size: 13px; border-radius: 9px; }
+.auth-code { letter-spacing: 0.3em; text-align: center; font-size: 16px; }
+.auth-submit { padding: 10px; border: 0; border-radius: 999px; background: var(--submit-bg); color: var(--submit-text); font-size: 12px; font-weight: 600; cursor: pointer; }
+.auth-submit.small { padding: 8px; font-size: 11px; }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
+.auth-text { padding: 4px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+.auth-text.danger { color: var(--danger); }
+.auth-error { min-height: 14px; margin: 0; font-size: 11px; color: var(--danger); }
+.auth-hint { margin: 0; font-size: 12px; color: var(--muted); }
+.auth-divider { display: flex; align-items: center; gap: 8px; color: var(--faint); font-size: 11px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-row { display: flex; justify-content: flex-end; min-height: 18px; }
+.auth-google { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px; border: 1px solid var(--field-border); border-radius: 999px; background: var(--field); color: var(--text); font-size: 12px; cursor: pointer; }
+.auth-google-mark, .auth-google-mark svg { display: block; width: 16px; height: 16px; }
+.auth-google:hover { background: var(--hover-bg); }
+.auth-id { display: grid; gap: 1px; }
+.auth-id strong { font-size: 15px; }
+.auth-id span { font-size: 12px; color: var(--muted); }
+/* Click-to-rename display name in the profile card. The row keeps a fixed
+ * height in both states so the email line below never shifts. */
+.auth-name-row { display: flex; align-items: baseline; gap: 7px; height: 28px; }
+.auth-name-editor { align-items: center; gap: 6px; }
+.auth-name { cursor: pointer; border-bottom: 1px dashed transparent; }
+.auth-name:hover, .auth-name:focus-visible { border-bottom-color: currentColor; }
+.auth-handle { color: var(--faint); font-size: 11px; user-select: none; }
+.auth-name-editor input { width: 150px; padding: 4px 8px; font-size: 13px; border-radius: 8px; }
+
+/* Profile section (bio / website / public email). */
+.auth-bio {
+  width: 100%; min-height: 64px; resize: vertical;
+  padding: 8px 9px; font-size: 12px; line-height: 1.6; border-radius: 9px;
+}
+.auth-bio-count { justify-self: end; color: var(--faint); font-size: 10px; }
+.auth-check { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; cursor: pointer; }
+.auth-check input { width: 12px; height: 12px; margin: 0; accent-color: var(--muted); }
+.auth-select {
+  padding: 8px 9px; font-size: 12px; border-radius: 9px;
+  color: var(--text); background: var(--field); border: 1px solid var(--field-border); outline: none;
+}
+.auth-select:focus { border-color: var(--field-focus); }
+
+/* Public profile card + visit confirmation (shares the .auth-* look). */
+.profile-card { width: min(300px, 100%); }
+.profile-card-avatar {
+  position: relative; flex: none; width: 52px; height: 52px;
+  display: grid; place-items: center; overflow: hidden;
+  border: 1px solid var(--field-border); border-radius: 50%;
+  background: var(--field); color: var(--muted); font-size: 20px; user-select: none;
+}
+.profile-card-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-card-name { display: flex; align-items: center; gap: 5px; }
+.profile-card-badge { display: inline-flex; line-height: 0; }
+.profile-card-bio { margin: 0; color: var(--markdown); font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.profile-card-rows { display: grid; gap: 7px; }
+.profile-card-row { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.profile-card-row a { color: var(--link); font-size: 12px; text-decoration: none; overflow-wrap: anywhere; }
+.profile-card-row a:hover { text-decoration: underline; }
+.profile-visit-url {
+  margin: 0; padding: 8px 10px; border-radius: 8px;
+  background: var(--field); color: var(--text); font-size: 12px; overflow-wrap: anywhere;
+}
+.profile-visit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.auth-muted { color: var(--faint) !important; }
+.auth-label { font-size: 11px; color: var(--muted); }
+.auth-badges { display: flex; gap: 8px; }
+.auth-badge { flex: 1; display: grid; gap: 5px; justify-items: center; padding: 9px 4px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); cursor: pointer; }
+.auth-badge.selected { border-color: var(--field-focus); box-shadow: 0 0 0 1px var(--field-focus); }
+.auth-badge span { font-size: 10px; color: var(--muted); }
+.auth-badge-mark { display: grid; place-items: center; width: 26px; height: 26px; }
+.auth-badge-none { color: var(--faint); font-size: 18px; }
+.auth-section { display: grid; gap: 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; }
+.auth-section[open] { padding-bottom: 8px; }
+.auth-section summary {
+  min-height: 38px; display: flex; align-items: center; gap: 6px; padding: 11px 0 5px;
+  list-style: none; line-height: 1; font-size: 12px; color: var(--text); cursor: pointer;
+}
+.auth-section summary::-webkit-details-marker { display: none; }
+.auth-section-title { display: inline-block; }
+.auth-section summary::before { content: "›"; color: var(--faint); font-size: 14px; line-height: 1; transition: transform 0.12s; }
+.auth-section[open] summary::before { transform: rotate(90deg); }
+/* small breathing room between the field(s) and the section's action button */
+.auth-section .auth-submit { margin-top: 5px; }
+.auth-foot { display: flex; justify-content: flex-end; }
+
+.auth-file { display: none; }
+.auth-identity { display: flex; align-items: center; gap: 12px; }
+.auth-avatar-edit { position: relative; flex: none; width: 56px; height: 56px; padding: 0; border: 1px solid var(--field-border); border-radius: 50%; overflow: hidden; background: var(--field); cursor: pointer; }
+.auth-avatar-media { position: absolute; inset: 0; display: grid; place-items: center; }
+.auth-avatar-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.15s; }
+.auth-avatar-fallback { font-size: 22px; color: var(--muted); transition: filter 0.15s; }
+.auth-avatar-hint { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: #fff; letter-spacing: 0.05em; opacity: 0; background: rgba(0, 0, 0, 0.28); transition: opacity 0.15s; }
+.auth-avatar-edit:hover .auth-avatar-media img, .auth-avatar-edit:hover .auth-avatar-fallback { filter: brightness(0.85) blur(2px); }
+.auth-avatar-edit:hover .auth-avatar-hint { opacity: 1; }
+.auth-avatar-edit:focus-visible { outline: 2px solid var(--field-focus); outline-offset: 2px; }

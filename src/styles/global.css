@@ -80,7 +80,6 @@ html {
 
 body {
   margin: 0;
-  zoom: 1.1;
   background: #f1f1f1;
   background: var(--page);
   color: #666;
@@ -465,15 +464,8 @@ kbd {
   margin: 0;
 }
 
-.footer-home {
-  float: left;
-  width: 700px;
-  font: bold 14px/18px 'Helvetica Neue', Arial, Helvetica, 'Nimbus Sans L', sans-serif;
-}
-
 .footer-credit {
-  float: right;
-  width: 220px;
+  text-align: center;
   font: italic 12px/18px Georgia, 'Bitstream Charter', serif;
 }
 
@@ -744,6 +736,14 @@ rt {
 }
 
 .nav-older {
+  float: right;
+  text-align: right;
+}
+
+.nav-newer {
+  float: left;
+}
+
 .comments {
   display: none;
   clear: both;
@@ -753,14 +753,6 @@ rt {
   margin: 24px 0 36px;
   color: #6b6b6b;
   color: var(--muted);
-}
-
-  float: right;
-  text-align: right;
-}
-
-.nav-newer {
-  float: left;
 }
 
 .archive-group {
@@ -824,9 +816,22 @@ rt {
 }
 
 @supports (display: grid) {
+  .site-shell {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 980px;
+  }
+
+  .header-picture,
+  .header-art,
+  .primary-nav,
+  .site-footer {
+    width: 100%;
+  }
+
   .branding {
     display: grid;
-    grid-template-columns: 700px 220px;
+    grid-template-columns: minmax(0, 1fr) 220px;
     column-gap: 20px;
     align-items: start;
     overflow: visible;
@@ -837,9 +842,13 @@ rt {
     float: none;
   }
 
+  .site-title {
+    width: auto;
+  }
+
   .page-grid {
     display: grid;
-    grid-template-columns: 640px 220px;
+    grid-template-columns: minmax(0, 1fr) 220px;
     column-gap: 60px;
     overflow: visible;
   }
@@ -855,17 +864,21 @@ rt {
     justify-content: center;
   }
 
-  .site-footer {
-    display: grid;
-    grid-template-columns: 700px 220px;
-    column-gap: 20px;
-    overflow: visible;
+  .comments {
+    display: block;
+    margin: 24px 0 36px;
   }
 
-  .footer-home,
-  .footer-credit {
-    float: none;
-    width: auto;
+  @media (max-width: 760px) {
+    .header-art {
+      height: 152px;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .header-art {
+      height: 88px;
+    }
   }
 }
 
@@ -948,64 +961,13 @@ rt {
   }
 }
 
-::view-transition-group(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-  animation: none !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 }
 
-@media (max-width: 1078px) {
-  .site-shell {
-    box-sizing: border-box;
-    width: 100%;
-    margin: 0;
-  }
-
-  .branding {
-    grid-template-columns: minmax(0, 1fr) 220px;
-  }
-
-  .site-title {
-    width: auto;
-  }
-
-  .header-picture,
-  .header-art,
-  .primary-nav,
-  .site-footer {
-    width: 100%;
-  }
-
-  .header-art {
-    height: auto;
-    aspect-ratio: 940 / 198;
-  }
-
-  .page-grid {
-    grid-template-columns: minmax(0, 1fr) 200px;
-    column-gap: 40px;
-  }
-
-  .sidebar {
-    width: 200px;
-  }
-
-  .site-footer {
-    grid-template-columns: minmax(0, 1fr) 220px;
-  }
-}
-
 @media (max-width: 760px) {
-  .site-shell {
-    padding: 0 20px;
-  }
-
   .branding {
     display: block;
   }
@@ -1022,7 +984,7 @@ rt {
 
   .site-description {
     width: auto;
-    margin-top: 4px;
+    margin: 0 0 15px;
   }
 
   .primary-nav {
@@ -1054,23 +1016,11 @@ rt {
   .widget {
     padding-right: 0;
   }
-
-  .site-footer {
-    grid-template-columns: 1fr;
-    row-gap: 6px;
-  }
-
-  .footer-home,
-  .footer-credit {
-    float: none;
-    width: auto;
-  }
 }
 
 @media (max-width: 460px) {
   .site-title {
     font-size: 23px;
-    line-height: 30px;
   }
 
   .nav-links {
@@ -1106,7 +1056,8 @@ rt {
   .site-footer,
   .table-of-contents,
   .copy-code,
-  .post-navigation {
+  .post-navigation,
+  .comments {
     display: none !important;
   }
 
