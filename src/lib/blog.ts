@@ -3,7 +3,11 @@ import siteConfig from '../../site.config.ts';
 
 export type BlogPost = CollectionEntry<'blog'>;
 
-export const published = (post: BlogPost) => !post.data.draft;
+export const publishedAt = (now: Date) => (post: BlogPost) =>
+  !post.data.draft && post.data.date.getTime() <= now.getTime();
+
+const buildTime = new Date();
+export const published = publishedAt(buildTime);
 
 export function sortPosts<T extends { data: { date: Date } }>(posts: T[]) {
   return [...posts].sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
