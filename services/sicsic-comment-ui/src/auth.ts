@@ -196,7 +196,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
   }
 
   function onFocus(): void {
-    if (!activated || destroyed || document.hidden || googlePoll) return;
+    if (!activated || destroyed || document.hidden || googlePoll || modal.isOpen()) return;
     const previous = token;
     void refresh().then(() => { if (!destroyed && previous !== token) onChange(); });
   }
@@ -345,7 +345,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
 
   // ---- Login / register modal ----------------------------------------------
 
-  function showLogin(): void {
+  function showLogin(): HTMLElement {
     const { root, body } = card(config.locale === 'zh-TW' ? '登入SicSic通行證' : copy.login);
     root.classList.add('auth-entry-card');
     const error = h('p', { class: 'auth-error', role: 'alert' });
@@ -501,6 +501,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     registerTab.addEventListener('click', renderRegister);
     renderLogin();
     openOverlay(root);
+    return root;
   }
 
   function divider(): HTMLElement {
@@ -862,15 +863,38 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     });
   }
 
-  async function open(): Promise<void> {
+  function open(): void {
     cancelPending();
     activated = true;
     const attempt = generation;
-    await refresh();
-    if (destroyed || attempt !== generation) return;
-    onChange();
+    const previousAccount = account?.id;
+    let entry: HTMLElement | null = null;
+    let fallbackTimer = 0;
     if (account) showProfile();
-    else showLogin();
+    else {
+      const { root, body } = card(text('SicSic 通行证', 'SicSic 通行證'));
+      root.classList.add('auth-entry-card');
+      body.append(h('p', { class: 'auth-hint', role: 'status' }, [text('正在确认登录状态…', '正在確認登入狀態…')]));
+      openOverlay(root);
+      // Give a quick restore time to avoid flashing a login form at signed-in
+      // readers. A slow request must never hold the form behind the network.
+      fallbackTimer = window.setTimeout(() => {
+        if (destroyed || attempt !== generation) return;
+        entry = showLogin();
+        const keepDraft = (): void => { if (attempt === generation) generation += 1; };
+        // Capture before submit/Google handlers create their own auth attempt.
+        entry.addEventListener('input', keepDraft, { once: true, capture: true });
+        entry.addEventListener('click', keepDraft, { once: true, capture: true });
+      }, 200);
+    }
+    void refresh().then(() => {
+      window.clearTimeout(fallbackTimer);
+      if (destroyed || attempt !== generation) return;
+      onChange();
+      if (account) {
+        if (account.id !== previousAccount) showProfile();
+      } else if (previousAccount || !entry) showLogin();
+    });
   }
 
   return {

@@ -67,7 +67,7 @@ export function createModal(container: HTMLElement, onDismiss: () => void = () =
     (initial?.getClientRects().length ? initial : controls()[0])?.focus();
   }
 
-  return { open, close };
+  return { open, close, isOpen: () => overlay !== null };
 }
 
 export type Modal = ReturnType<typeof createModal>;

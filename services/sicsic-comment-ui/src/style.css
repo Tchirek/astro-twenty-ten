@@ -395,6 +395,7 @@ footer a:hover { color: var(--footer-hover); }
 .icon-button.account svg { width: 19px; height: 19px; fill: currentColor; }
 .account-label { display: none; }
 .icon-button.account.signed-in { color: var(--link); }
+.account[aria-busy="true"] { cursor: progress; opacity: 0.55; }
 .composer-identity { font-size: 11px; color: var(--muted); }
 
 .comment-edit { display: grid; gap: 7px; }

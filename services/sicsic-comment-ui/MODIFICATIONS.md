@@ -1,6 +1,6 @@
 # Changes / 修改摘要
 
-Relevant modification date / 相关修改日期: 2026-08-28
+Relevant modification date / 相关修改日期: 2026-09-07
 
 SicSic is derived from BeiyanYunyi/Sodesu v0.5.2 and keeps the upstream AGPL
 license obligations. This file summarizes the product-level changes.
@@ -79,3 +79,5 @@ non-goals and backend rollout gates are in `INTEGRATION.md` and `THREAT_MODEL.md
 ## 2026-09-07
 
 Replace account/password/logout popup transport with credentialed same-site session requests. Open only Google directly, retaining browser nonce and PKCE result validation. Point frame attribution to the public SicSic repository; continue shipping the corresponding-source archive.
+
+v0.1.2 shows the account dialog before session lookup completes, with a 200 ms login-form fallback and draft protection. Hover/focus preloads only the UI module; network identity lookup still requires account activation.

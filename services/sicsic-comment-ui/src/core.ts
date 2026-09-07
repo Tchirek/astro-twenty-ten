@@ -61,6 +61,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
   let publishing = false;
   let memoryCommentedImages = new Set<string>();
   let passport: import('./passport').Passport | null = null;
+  let passportModule: Promise<typeof import('./passport')> | null = null;
   let passportPromise: Promise<import('./passport').Passport | null> | null = null;
   let accountOpening = false;
   let markdownPromise: Promise<typeof import('./markdown')> | null = null;
@@ -153,9 +154,16 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     elements.textarea.focus();
   }
 
+  function preloadPassport(): Promise<typeof import('./passport')> {
+    return passportModule ||= import('./passport').catch((error) => {
+      passportModule = null;
+      throw error;
+    });
+  }
+
   async function ensurePassport(): Promise<import('./passport').Passport | null> {
     if (!config.capabilities.passport) return null;
-    passportPromise ||= import('./passport').then(({ createPassport }) => {
+    passportPromise ||= preloadPassport().then(({ createPassport }) => {
       if (destroyed) return null;
       passport = createPassport({
         config,
@@ -177,12 +185,14 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
   function openAccount(): void {
     if (accountOpening || !config.capabilities.passport) return;
     accountOpening = true;
+    elements.accountButton.setAttribute('aria-busy', 'true');
     void ensurePassport().then(async (value) => {
       if (value) await value.open();
     }).catch(() => {
       if (!destroyed) elements.status.textContent = config.locale === 'zh-TW' ? '帳戶功能載入失敗，請重試' : '账户功能加载失败，请重试';
     }).finally(() => {
       accountOpening = false;
+      elements.accountButton.removeAttribute('aria-busy');
     });
   }
 
@@ -446,6 +456,12 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
   elements.replyTarget.addEventListener('click', () => setReplyTarget(null));
   elements.previewToggle.addEventListener('click', () => setPreview(!state.previewing));
   elements.submit.addEventListener('click', () => void publish());
+  // Warm only the UI code on intent; identity requests still require a click.
+  const warmPassport = (): void => {
+    if (config.capabilities.passport) void preloadPassport().catch(() => undefined);
+  };
+  elements.accountButton.addEventListener('pointerenter', warmPassport);
+  elements.accountButton.addEventListener('focus', warmPassport);
   elements.accountButton.addEventListener('click', () => {
     const drawer = elements.accountButton.closest('details');
     drawer?.removeAttribute('open');
