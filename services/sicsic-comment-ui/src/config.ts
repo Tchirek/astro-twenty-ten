@@ -16,6 +16,8 @@ export interface CommentInitOptions {
   title?: string;
   anonymousNickname?: string;
   passport?: boolean;
+  /** Opt in only when authURL implements the first-party Passport broker. */
+  sessionBroker?: boolean;
   viewerId?: string;
   adminToken?: string;
 }
@@ -36,6 +38,7 @@ export interface CommentUiConfig {
   discloseOsStorageKey: string;
   sessionStorageKey: string;
   legacySessionStorageKey: string;
+  sessionBroker: boolean;
   title: string;
   anonymousNickname: string;
   locale: CommentLocale;
@@ -49,10 +52,11 @@ export interface PassportConfig {
   authOrigin: string;
   sessionStorageKey: string;
   legacySessionStorageKey: string;
+  sessionBroker: boolean;
   locale: CommentLocale;
 }
 
-const DEFAULT_SOURCE_REPO_URL = '/sicsic-comment-ui-source.tar.gz';
+const DEFAULT_SOURCE_REPO_URL = 'https://github.com/Tchirek/SicSic';
 
 export function normalizeApiOrigin(value: string): string {
   const trimmed = value.trim();
@@ -78,6 +82,7 @@ export function resolveConfig(options: CommentInitOptions): CommentUiConfig {
     viewerStorageKey: options.viewerStorageKey || `${storageNamespace}_viewer`,
     sessionStorageKey: authOrigin ? `comment_ui_session@${authOrigin}` : `${storageNamespace}_session`,
     legacySessionStorageKey: `${storageNamespace}_session`,
+    sessionBroker: options.passport !== false && options.sessionBroker === true,
     title: options.title || (locale === 'zh-TW' ? '迴響' : '评论'),
     anonymousNickname: options.anonymousNickname || 'Anonymous',
     locale,

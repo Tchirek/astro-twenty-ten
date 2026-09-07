@@ -17,6 +17,8 @@ const { subject } = Astro.props;
     const comments = init({
       el,
       serverURL: 'https://api.pics.tchirek.top',
+      passport: true,
+      sessionBroker: true,
       locale: 'zh-TW',
       storageNamespace: 'sicsic_blog',
       sourceRepoUrl: 'https://comments.sicnu.pics.tchirek.top/sicsic-comment-ui-source.tar.gz',

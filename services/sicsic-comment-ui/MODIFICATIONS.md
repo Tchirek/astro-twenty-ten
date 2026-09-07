@@ -1,6 +1,6 @@
 # Changes / 修改摘要
 
-Relevant modification date / 相关修改日期: 2026-08-27
+Relevant modification date / 相关修改日期: 2026-08-28
 
 SicSic is derived from BeiyanYunyi/Sodesu v0.5.2 and keeps the upstream AGPL
 license obligations. This file summarizes the product-level changes.
@@ -9,6 +9,18 @@ SicSic 基于 BeiyanYunyi/Sodesu v0.5.2 修改，并继续遵守上游 AGPL 协�
 产品级修改摘要。
 
 ## Current Product / 当前产品
+
+2026-08-28 restores cross-origin Passport continuation through a click-only,
+first-party account popup. A canonical HttpOnly cookie, single-use PKCE codes
+and exact window/origin/state checks connect Blog and Pics/Docs without sharing
+localStorage or adding a comment iframe. Google initialization is browser-bound;
+proof-bound polling survives opener isolation. Shared logout has a D1 revocation
+barrier. Existing comment/profile visuals and account customization are unchanged.
+
+2026-08-28 补回跨站通行证：仅点击身份入口时启用账户源顶层弹窗，以 HttpOnly
+Cookie、一次性 PKCE 授权码及精确窗口／来源／state 校验接续登录。Google 启动
+绑定当前浏览器，结果轮询不依赖 opener。退出撤销由 D1 阻止共享会话复活。
+不重加 Blog 评论 iframe，不改评论／账户界面，不移除头像或徽章功能。
 
 The 2026-08-27 refactor replaces Blog's iframe with host-native core DOM and
 Blog-owned Twenty Ten CSS. Passport is a dynamic identity module; the frame
@@ -63,3 +75,7 @@ non-goals and backend rollout gates are in `INTEGRATION.md` and `THREAT_MODEL.md
 - 默认皮肤页脚显示 `Powered by SicSic`；Twenty Ten 皮肤隐藏产品页脚，上游
   Sodesu 署名仍保留在源码与协议材料中。
 - 每次构建都会在 `/sicsic-comment-ui-source.tar.gz` 发布该版本对应源码。
+
+## 2026-09-07
+
+Replace account/password/logout popup transport with credentialed same-site session requests. Open only Google directly, retaining browser nonce and PKCE result validation. Point frame attribution to the public SicSic repository; continue shipping the corresponding-source archive.

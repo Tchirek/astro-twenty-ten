@@ -5,6 +5,7 @@ interface RawFrameConfig {
   authOrigin?: string;
   allowedParentOrigins?: string[] | string;
   sourceRepoUrl?: string;
+  sessionBroker?: boolean;
   storageNamespace?: string;
   title?: string;
   anonymousNickname?: string;
@@ -22,7 +23,7 @@ declare global {
   }
 }
 
-const DEFAULT_SOURCE_REPO_URL = '/sicsic-comment-ui-source.tar.gz';
+const DEFAULT_SOURCE_REPO_URL = 'https://github.com/Tchirek/SicSic';
 const AUTH_BACKENDS = new Set(['https://api.pics.tchirek.top']);
 
 const PRESETS: Record<string, RawFrameConfig> = {
@@ -84,6 +85,7 @@ export function readFrameConfig(): FrameConfig {
       sourceRepoUrl: raw.sourceRepoUrl || runtimeEnv.VITE_SOURCE_REPO_URL || DEFAULT_SOURCE_REPO_URL,
       title: raw.title || runtimeEnv.VITE_COMMENT_TITLE || '评论',
       anonymousNickname: raw.anonymousNickname || runtimeEnv.VITE_ANONYMOUS_NICKNAME || 'Anonymous',
+      sessionBroker: passport && (raw.sessionBroker ?? AUTH_BACKENDS.has(authOrigin)),
       passport
     },
     allowedParentOrigins: new Set(

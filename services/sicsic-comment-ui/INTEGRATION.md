@@ -18,6 +18,8 @@ const comments = init({
   serverURL: 'https://api.pics.tchirek.top',
   subject: 'blog:/2026/08/23/twenty-ten-on-astro/',
   locale: 'zh-TW',
+  passport: true,
+  sessionBroker: true, // requires the matching account-origin broker deployment
 });
 
 // Only if the host reuses or removes the mount:
@@ -27,7 +29,7 @@ comments.destroy();
 
 Blog renders a normal `<section id="comments" class="comments">`. Its bootstrap mounts the form immediately and supplies the subject within 300px of the viewport. Without IntersectionObserver it loads directly; without JavaScript the article and comment fallback stay readable. There is no iframe, height reservation, handshake, scroll relay or theme message.
 
-`locale` controls language/date text, `integration` controls inline/frame layout, CSS controls appearance, and `passport: false` disables optional identity UI. Inline roots default to chronological order; frame presets explicitly select ranked roots. Never make a visual skin name a business-mode switch.
+`locale` controls language/date text, `integration` controls inline/frame layout, CSS controls appearance, and `passport: false` disables optional identity UI. `sessionBroker: true` explicitly enables cross-origin session continuation for an account backend implementing this protocol; it is off for generic integrations. Blog and the known Pics/Docs account presets opt in. Inline roots default to chronological order; frame presets explicitly select ranked roots. Never make a visual skin name a business-mode switch.
 
 Blog keeps the existing Twenty Ten form, B/I/Preview buttons, avatars, indents, hover/focus and dark appearance. Comment breakpoints use container width, matching the old iframe viewport. Explicit CJK font fallbacks preserve Windows rendering while the region correctly declares `zh-TW`. Pics/Docs keep their independent panel appearance and gestures.
 
@@ -38,7 +40,12 @@ Blog keeps the existing Twenty Ten form, B/I/Preview buttons, avatars, indents, 
 - Nickname and OS-disclosure preferences are written only after an explicit action. Old persistent viewer keys are ignored, not silently deleted.
 - Lists render the stored text byline and the account's current avatar/badge directly from the comment API response. Old comments follow avatar/badge changes when comments are fetched again. There is no bulk profile request or client-side profile overlay. A clicked author with `authorId` loads Passport and requests only that profile.
 - Opening the identity drawer alone does not load Passport; login/account management inside it does.
-- Passport reads a stored bearer only after an identity action. Presets on the same comment origin can share a session for one auth backend; inline Blog cannot read that origin's storage. This is not automatic cross-origin SSO.
+- Passport reads a saved account only after an identity action. Opening the account, password login, registration, reset and logout stay in the current page. The existing `sessionBroker: true` option now enables credentialed session requests; no popup broker is used.
+- The canonical session is an HttpOnly, Secure, host-only API cookie. HTTPS sites under the same registrable domain (the formal Blog/Pics/Docs domains) can restore it through an exact-origin CORS JSON POST. A current central account wins over old local storage; a valid legacy bearer can initialize an empty central session. Blocked localStorage falls back to memory.
+- SameSite=Lax is retained. Automatic continuity across unrelated domains (including a pages.dev preview versus the formal domain) is subject to browser cookie restrictions; use the formal same-site domains for continuity. There is no automatic popup fallback.
+- Password login, registration and reset set the central cookie in their own response. Logout revokes the bearer and clears its matching cookie. Session and bearer validation both consult the D1 revocation barrier, including requests from Docs.
+- Only Google opens a window. The login form prepares a browser-bound PKCE transaction on the account API; the Google click opens the provider URL directly. Proof-bound polling works even if COOP returns no WindowProxy. Separate nonce cookies keep concurrently prepared Google flows independent. Legacy state-only GET endpoints remain disabled.
+- Closing a dialog discards pending UI results; it does not undo authentication already completed by the backend. Network failures preserve the draft and never trigger continuity popups.
 - Dialogs trap keyboard focus, close on Escape and restore the opener. Loading failures leave anonymous editing usable.
 
 Custom avatar upload and badge selection remain available. Avatars and badges are not frozen per comment, and no avatar/badge snapshot migration is required. Preserving the historical text byline is a separate backend rollout requirement; verify it against the deployed API before enabling inline comments.
@@ -56,6 +63,12 @@ The existing iframe sandbox is `allow-scripts allow-same-origin allow-popups all
 ## Verification and non-goals
 
 From this package, run `npm run check`, `npm test`, `npm run build`, then `npm run test:budget`. The Blog repository additionally builds both products before its route, bundle, E2E and visual checks.
+
+`tests/passport-sso.spec.ts` in the Blog checkout exercises separate HTTPS origins
+with the real broker script and isolated, fake accounts. It checks cross-site
+continuation, shared logout, popup failures and rejected foreign messages; no
+production account is used. Deploy the backend before the new frame client, and
+keep the Blog's inline rollout gated separately.
 
 `npm run build` publishes an allowlisted corresponding-source archive. It includes `wrangler.example.toml`, not the private deployment configuration, credentials or local environment files. Copy the example to `wrangler.toml` and configure your own origins before deploying.
 

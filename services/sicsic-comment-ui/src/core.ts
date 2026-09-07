@@ -62,7 +62,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
   let memoryCommentedImages = new Set<string>();
   let passport: import('./passport').Passport | null = null;
   let passportPromise: Promise<import('./passport').Passport | null> | null = null;
-  let accountRefreshed = false;
+  let accountOpening = false;
   let markdownPromise: Promise<typeof import('./markdown')> | null = null;
 
   const api = createCommentApi(config, {
@@ -153,7 +153,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     elements.textarea.focus();
   }
 
-  async function ensurePassport(refreshAccount: boolean): Promise<import('./passport').Passport | null> {
+  async function ensurePassport(): Promise<import('./passport').Passport | null> {
     if (!config.capabilities.passport) return null;
     passportPromise ||= import('./passport').then(({ createPassport }) => {
       if (destroyed) return null;
@@ -171,11 +171,19 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     });
     const loaded = await passportPromise;
     if (!loaded || destroyed) return null;
-    if (refreshAccount && !accountRefreshed) {
-      accountRefreshed = true;
-      await loaded.refresh();
-    }
     return destroyed ? null : loaded;
+  }
+
+  function openAccount(): void {
+    if (accountOpening || !config.capabilities.passport) return;
+    accountOpening = true;
+    void ensurePassport().then(async (value) => {
+      if (value) await value.open();
+    }).catch(() => {
+      if (!destroyed) elements.status.textContent = config.locale === 'zh-TW' ? '帳戶功能載入失敗，請重試' : '账户功能加载失败，请重试';
+    }).finally(() => {
+      accountOpening = false;
+    });
   }
 
   function onAccountChange(account: AccountUser | null): void {
@@ -225,7 +233,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
       locale: config.locale,
       rootOrder: config.rootOrder,
       showSkeleton: config.integration === 'frame',
-      onShowProfile: (item) => void ensurePassport(false).then((value) => value?.openProfile(item)),
+      onShowProfile: (item) => void ensurePassport().then((value) => value?.openProfile(item)),
       onReply: setReplyTarget,
       onLike: (item) => void toggleLike(item),
       onDelete: (item) => void deleteComment(item),
@@ -238,7 +246,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
         render();
       },
       onEditSave: (item, content) => void saveEdit(item, content),
-      onAvatarEdit: () => void ensurePassport(true).then((value) => value?.open())
+      onAvatarEdit: openAccount
     });
   }
 
@@ -442,7 +450,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     const drawer = elements.accountButton.closest('details');
     drawer?.removeAttribute('open');
     (drawer?.querySelector('summary') ?? elements.accountButton).focus();
-    void ensurePassport(true).then((value) => value?.open());
+    openAccount();
   });
 
   try {

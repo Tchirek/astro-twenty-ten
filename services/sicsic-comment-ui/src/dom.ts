@@ -53,7 +53,7 @@ export function mountApp(app: HTMLElement, config: CommentUiConfig): CommentElem
               <label class="disclose-os"><input type="checkbox">${traditional ? '顯示 UA' : '显示 UA'}</label>
             </div>
           </details>
-          <span class="status" role="status"></span>
+          <span class="status" aria-hidden="true" style="visibility: hidden"></span>
           <button class="submit" type="button" disabled>${traditional ? '留言' : '发布'}</button>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function mountApp(app: HTMLElement, config: CommentUiConfig): CommentElem
     ${composerMarkup}
     <section class="comment-list" aria-live="polite"></section>
     <footer>
-      Powered by <a class="source-link" target="_blank" rel="noreferrer">SicSic v0.1.0</a>
+      Powered by <a class="source-link" target="_blank" rel="noreferrer">SicSic v0.1.1</a>
     </footer>
   `;
 

@@ -23,7 +23,7 @@ export function createPassport({ config, container, anonymousNickname, onChange 
   const api = createPassportApi(config);
   let destroyed = false;
   const profiles: Record<string, PublicProfile> = {};
-  const modal = createModal(container);
+  const modal = createModal(container, () => auth.cancel());
   const auth = createAuth({
     config,
     api,

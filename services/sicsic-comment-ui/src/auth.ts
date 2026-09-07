@@ -4,6 +4,7 @@ import type { PassportApi } from './passportApi';
 import type { Modal } from './modal';
 import type { AccountUser, BadgeKind } from './types';
 import { badgeSvg } from './badges';
+import { sessionProof, type SessionProof } from './sessionProof';
 
 interface AuthOptions {
   config: PassportConfig;
@@ -129,6 +130,14 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
   let account: AccountUser | null = null;
   let googlePopup: Window | null = null;
   let googlePoll = 0;
+  let googleGeneration = 0;
+  let googleState = '';
+  let googleVerifier = '';
+  let googleChecking = false;
+  let generation = 0;
+  let destroyed = false;
+  let googlePrepare: AbortController | null = null;
+  let activated = false;
   let authError: ((message: string) => void) | null = null;
 
   function persist(next: string): void {
@@ -149,21 +158,53 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     onChange();
   }
 
+  function cancelPending(): void {
+    generation += 1;
+    googlePrepare?.abort();
+    googlePrepare = null;
+    googleGeneration += 1;
+    stopGooglePoll();
+    googlePopup?.close();
+    googlePopup = null;
+    googleState = '';
+    googleVerifier = '';
+    googleChecking = false;
+  }
+
+  function finishLogin(session: { token: string; user: AccountUser }, attempt: number): void {
+    if (!destroyed && attempt === generation) applySession(session.token, session.user);
+  }
+
   async function refresh(): Promise<void> {
-    if (!token) {
-      account = null;
-      return;
-    }
+    const attempt = generation;
+    const savedToken = token;
     try {
-      const { user } = await api.me(token);
-      account = user;
+      const session = config.sessionBroker
+        ? await api.session(savedToken)
+        : savedToken ? { token: savedToken, ...(await api.me(savedToken)) } : { token: '', user: null };
+      if (destroyed || attempt !== generation || savedToken !== token) return;
+      persist(session.token);
+      account = session.user;
     } catch (error) {
-      if (error instanceof ApiError && error.message === 'unauthorized') persist('');
-      account = null;
+      if (destroyed || attempt !== generation || savedToken !== token) return;
+      if (error instanceof ApiError && error.message === 'unauthorized') {
+        persist('');
+        account = null;
+      }
+      // A temporary network failure must not erase a valid local session.
     }
   }
 
+  function onFocus(): void {
+    if (!activated || destroyed || document.hidden || googlePoll) return;
+    const previous = token;
+    void refresh().then(() => { if (!destroyed && previous !== token) onChange(); });
+  }
+  window.addEventListener('focus', onFocus);
+  document.addEventListener('visibilitychange', onFocus);
+
   function closeOverlay(): void {
+    cancelPending();
     modal.close();
   }
 
@@ -207,7 +248,34 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
 
   function googleButton(): HTMLButtonElement {
     const btn = h('button', { class: 'auth-google', type: 'button' }, [googleIcon(), h('span', {}, [copy.google])]);
-    btn.addEventListener('click', () => void openGoogle());
+    let prepared: { url: string; proof: SessionProof; expiresAt: number } | null = null;
+    async function prepare(reportError = false): Promise<void> {
+      btn.disabled = true;
+      const active = googleGeneration;
+      googlePrepare?.abort();
+      const controller = new AbortController();
+      googlePrepare = controller;
+      try {
+        const proof = await sessionProof();
+        const { url } = await api.googleStart({ origin: location.origin, state: proof.state, codeChallenge: proof.codeChallenge },
+          AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]));
+        if (new URL(url).origin !== 'https://accounts.google.com') throw new Error('invalid_provider');
+        if (!destroyed && active === googleGeneration) prepared = { url, proof, expiresAt: Date.now() + 540_000 };
+      } catch {
+        if (!destroyed && active === googleGeneration && reportError) authError?.(errors.oauth_failed);
+      } finally {
+        if (googlePrepare === controller) googlePrepare = null;
+        btn.disabled = false;
+      }
+    }
+    // Prepare after opening the login form, so the Google click can navigate
+    // directly in its user gesture. No blank window or opener handshake.
+    void prepare();
+    btn.addEventListener('click', () => {
+      if (!prepared || prepared.expiresAt <= Date.now()) { void prepare(true); return; }
+      openGoogle(prepared.url, prepared.proof);
+      prepared = null;
+    });
     return btn;
   }
 
@@ -224,24 +292,14 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
       authError?.(errors[data.error] || errors.oauth_failed);
       return;
     }
-    if (data.token && data.user) {
+    if (typeof data.token === 'string' && data.user && typeof data.user.id === 'string') {
       applySession(data.token, data.user);
       return;
     }
-    if (data.token) {
-      persist(data.token);
-      void refresh().then(() => {
-        if (account) {
-          closeOverlay();
-          onChange();
-        } else {
-          authError?.(text('登录已创建，请稍后重试', '登入已建立，請稍後重試'));
-        }
-      });
-    }
+    authError?.(errors.oauth_failed);
   }
 
-  function pollGoogle(state: string): void {
+  function pollGoogle(state: string, codeVerifier: string): void {
     stopGooglePoll();
     let attempts = 0;
     googlePoll = window.setInterval(() => {
@@ -251,37 +309,36 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
         authError?.(text('Google 登录超时，请重试', 'Google 登入逾時，請重試'));
         return;
       }
-      void api.googleResult(state).then((data) => {
-        if (!data.pending) finishGoogle(data);
-      }).catch(() => undefined);
+      if (googleChecking) return;
+      googleChecking = true;
+      const active = googleGeneration;
+      void api.googleResult(state, codeVerifier).then((data) => {
+        if (active === googleGeneration && !destroyed && !data.pending) finishGoogle(data);
+      }).catch((error) => {
+        if (active === googleGeneration && error instanceof ApiError && error.message !== 'request_502') {
+          stopGooglePoll();
+          authError?.(errors.oauth_failed);
+        }
+      }).finally(() => { if (active === googleGeneration) googleChecking = false; });
     }, 1200);
   }
 
-  function openGoogle(): void {
-    const width = 460;
-    const height = 620;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-    const state = crypto.randomUUID();
-    stopGooglePoll();
-    // window.open can return null (opener severed by COOP / sandbox / cross-origin)
-    // even when the popup actually opens. So we never treat null as failure: the
-    // /api/auth/google/result poll is the source of truth and reports a timeout if
-    // nothing comes back. (Hard-failing on null here previously skipped the poll, so
-    // a successful Google login was never collected.)
-    googlePopup = window.open(
-      api.googleStartUrl(window.location.origin, state),
-      'sicsic-google',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-    pollGoogle(state);
+  function openGoogle(url: string, proof: SessionProof): void {
+    cancelPending();
+    googleState = proof.state;
+    googleVerifier = proof.codeVerifier;
+    // COOP can sever the WindowProxy even when the popup opened successfully.
+    // The proof-bound result endpoint is authoritative, never window.opener.
+    googlePopup = window.open(url, '_blank', 'popup,width=460,height=620');
+    pollGoogle(proof.state, proof.codeVerifier);
   }
 
   function onMessage(event: MessageEvent): void {
     if (!googlePoll || !googlePopup || event.source !== googlePopup || event.origin !== new URL(config.authOrigin, location.href).origin) return;
-    const data = event.data as { type?: string; token?: string; user?: AccountUser; error?: string };
-    if (!data || (data.type !== 'sicsic-auth' && data.type !== 'sodesu-auth')) return;
-    finishGoogle(data);
+    const data = event.data as { type?: string; state?: string; complete?: boolean };
+    if (!data || data.type !== 'sicsic-auth' || data.state !== googleState || data.complete !== true) return;
+    // A message is only a hint. Never accept a bearer from a popup message.
+    if (!googleChecking && googleVerifier) pollGoogle(googleState, googleVerifier);
   }
 
   window.addEventListener('message', onMessage);
@@ -315,13 +372,15 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
       const reset = h('button', { class: 'auth-text auth-reset', type: 'button' }, [copy.forgot]);
       reset.addEventListener('click', renderResetStart);
       submit.addEventListener('click', async () => {
+        cancelPending();
+        const attempt = generation;
         submit.disabled = true;
         showError('');
         try {
           const { token: t, user } = await api.login({ identifier: identifier.value.trim(), password: password.value });
-          applySession(t, user);
+          finishLogin({ token: t, user }, attempt);
         } catch (err) {
-          showError(messageFor(err));
+          if (attempt === generation && !destroyed) showError(messageFor(err));
         } finally {
           submit.disabled = false;
         }
@@ -369,13 +428,15 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
       const back = h('button', { class: 'auth-text', type: 'button' }, [copy.back]);
       back.addEventListener('click', renderRegister);
       submit.addEventListener('click', async () => {
+        cancelPending();
+        const attempt = generation;
         submit.disabled = true;
         showError('');
         try {
           const { token: t, user } = await api.registerVerify({ email, code: code.value.trim() });
-          applySession(t, user);
+          finishLogin({ token: t, user }, attempt);
         } catch (err) {
-          showError(messageFor(err));
+          if (attempt === generation && !destroyed) showError(messageFor(err));
         } finally {
           submit.disabled = false;
         }
@@ -419,13 +480,15 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
       const back = h('button', { class: 'auth-text', type: 'button' }, [copy.back]);
       back.addEventListener('click', renderResetStart);
       submit.addEventListener('click', async () => {
+        cancelPending();
+        const attempt = generation;
         submit.disabled = true;
         showError('');
         try {
           const { token: t, user } = await api.resetVerify({ email, code: code.value.trim(), password: password.value });
-          applySession(t, user);
+          finishLogin({ token: t, user }, attempt);
         } catch (err) {
-          showError(messageFor(err));
+          if (attempt === generation && !destroyed) showError(messageFor(err));
         } finally {
           submit.disabled = false;
         }
@@ -453,6 +516,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     const showError = (m: string): void => {
       error.textContent = m;
     };
+    authError = showError;
 
     const idLine = h('div', { class: 'auth-id' });
     const emailSpan = (): HTMLElement =>
@@ -761,15 +825,24 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
 
     const logout = h('button', { class: 'auth-text danger', type: 'button' }, [copy.logout]);
     logout.addEventListener('click', async () => {
+      cancelPending();
+      const attempt = generation;
+      logout.disabled = true;
       try {
-        await api.logout(token);
-      } catch {
-        /* ignore */
+        try { await api.logout(token); }
+        catch (error) {
+          if (!(error instanceof ApiError && error.message === 'unauthorized')) throw error;
+        }
+        if (destroyed || attempt !== generation) return;
+        persist('');
+        account = null;
+        closeOverlay();
+        onChange();
+      } catch (error) {
+        if (!destroyed && attempt === generation) showError(messageFor(error));
+      } finally {
+        logout.disabled = false;
       }
-      persist('');
-      account = null;
-      closeOverlay();
-      onChange();
     });
 
     body.append(
@@ -789,16 +862,29 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     });
   }
 
+  async function open(): Promise<void> {
+    cancelPending();
+    activated = true;
+    const attempt = generation;
+    await refresh();
+    if (destroyed || attempt !== generation) return;
+    onChange();
+    if (account) showProfile();
+    else showLogin();
+  }
+
   return {
     account: () => account,
     token: () => token,
     refresh,
-    open: () => (account ? showProfile() : showLogin()),
+    open,
+    cancel: cancelPending,
     destroy: () => {
-      stopGooglePoll();
-      googlePopup?.close();
+      destroyed = true;
       closeOverlay();
       window.removeEventListener('message', onMessage);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
     }
   };
 }

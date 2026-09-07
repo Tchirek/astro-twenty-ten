@@ -20,19 +20,37 @@ Passport still uses the existing persistent bearer-session protocol. Its token i
 stored in `localStorage` after login; moving the module off the reader path does
 not make a previously saved token unreadable to other same-origin JavaScript.
 An XSS on the executing origin could steal it. Presets sharing the comment origin
-and auth backend share that blast radius. Blog storage is a separate origin and
-does not automatically import an existing iframe session.
+and auth backend share that blast radius. Blog storage remains a separate origin;
+identical storage keys never make different origins share storage.
 
-A switch to HttpOnly cookies or short-lived access tokens with refresh rotation
-requires a coordinated backend/client migration, including expiry/revocation,
-CSRF, exact origin rules and third-party-cookie behavior for frame consumers.
-This refactor does not claim to have implemented or deployed that migration.
-Changing only the storage API is not a complete security fix.
+An explicit identity action restores the account with a credentialed JSON POST
+to /api/auth/sso/session. The host-only __Host-sicsic-session cookie remains
+HttpOnly, Secure, SameSite=Lax, Path=/, without Domain. Formal HTTPS sites under
+the same registrable domain share the API cookie under ordinary browser rules;
+unrelated domains and third-party-cookie restrictions are not bypassed.
 
-OAuth messages are accepted only during an active flow, from the known popup and
-the configured auth origin. State-bound result polling remains the fallback when
-popup/opener isolation prevents messages. Never send bearer tokens through
-generic frame context or theme messages.
+Cookie reads require an exact allowlisted Origin and application/json. CORS
+allows credentials only on auth routes for the account/Comment/Blog origins.
+Neither a wildcard nor a generic same-site Origin is sufficient. Normal bearer
+requests remain authenticated by the bearer; arbitrary sibling domains cannot
+read a cookie or set the canonical account through a form submission.
+
+An existing central account wins over a stale local bearer. A valid legacy
+bearer initializes only an empty central session, with its original remaining
+lifetime. Login/registration/reset can explicitly replace it. Both central and
+ordinary bearer validation consult primary D1 revocation state so delayed KV
+deletion cannot revive a logged-out account. Old code/exchange routes remain for
+already-open clients; the new UI does not use them.
+
+Google preparation is a credentialed, exact-origin JSON POST from the login
+form. Each flow has a separate HttpOnly nonce cookie and a server-generated
+provider state. The only window.open navigates directly to Google during the
+user click; it never reserves about:blank or relies on opener messaging. The
+result endpoint atomically consumes state + exact Origin + S256 PKCE verifier.
+No bearer or verifier enters a URL or postMessage. Legacy GET start/result
+endpoints remain disabled. Concurrent forms cannot overwrite a pending flow's
+nonce. A verified callback is the login commit point; closing a host dialog
+discards its pending UI result but cannot undo a completed server-side login.
 
 ## Anonymous continuity
 
@@ -49,6 +67,12 @@ auth credentials.
 Allow only the actual Blog origin in API CORS and the OAuth return-origin list,
 while preserving Pics/Docs/comment-origin entries. Do not replace an allowlist with
 `*`. A new `SITE_URL` also needs its own backend origin review.
+
+Deploy the account API before the new frame. Verify credentialed preflight and
+session requests on the formal origins, plus nonce-bound Google callback and
+PKCE result collection. Preserve production bindings and exact allowlists.
+The legacy broker stays unframeable, no-store and no-referrer. Browser fixtures
+and source tests are regression checks, not evidence of production deployment.
 
 Inline rollout requires the backend to preserve each comment's historical text byline, while avatars and
 badges follow the account's current settings on old and new comments. Those values

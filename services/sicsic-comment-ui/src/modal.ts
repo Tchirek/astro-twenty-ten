@@ -1,6 +1,6 @@
 const focusable = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
-export function createModal(container: HTMLElement) {
+export function createModal(container: HTMLElement, onDismiss: () => void = () => undefined) {
   let overlay: HTMLElement | null = null;
   let returnFocus: HTMLElement | null = null;
   let inertSiblings: Array<[HTMLElement, boolean]> = [];
@@ -11,6 +11,7 @@ export function createModal(container: HTMLElement) {
   }
 
   function close(restoreFocus = true): void {
+    const wasOpen = Boolean(overlay);
     overlay?.remove();
     overlay = null;
     document.removeEventListener('keydown', onKeydown);
@@ -18,6 +19,7 @@ export function createModal(container: HTMLElement) {
     for (const [element, wasInert] of inertSiblings) element.inert = wasInert;
     inertSiblings = [];
     if (restoreFocus && returnFocus?.isConnected) returnFocus.focus();
+    if (restoreFocus && wasOpen) onDismiss();
   }
 
   function onFocus(event: FocusEvent): void {

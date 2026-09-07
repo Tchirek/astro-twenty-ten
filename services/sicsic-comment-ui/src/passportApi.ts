@@ -30,6 +30,12 @@ export function createPassportApi(config: PassportConfig) {
   }
 
   return {
+    session(token = ''): Promise<{ token: string; user: AccountUser | null }> {
+      return request('/api/auth/sso/session', {
+        method: 'POST', headers: token ? authHeaders(token) : { 'Content-Type': 'application/json' }, body: '{}',
+        credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(8000),
+      });
+    },
     registerStart(payload: { email: string; username: string; password: string }): Promise<unknown> {
       return request('/api/auth/register/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -37,11 +43,13 @@ export function createPassportApi(config: PassportConfig) {
     },
     registerVerify(payload: { email: string; code: string }): Promise<{ token: string; user: AccountUser }> {
       return request('/api/auth/register/verify', {
+        credentials: config.sessionBroker ? 'include' : 'omit',
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
     },
     login(payload: { identifier: string; password: string }): Promise<{ token: string; user: AccountUser }> {
       return request('/api/auth/login', {
+        credentials: config.sessionBroker ? 'include' : 'omit',
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
     },
@@ -52,6 +60,7 @@ export function createPassportApi(config: PassportConfig) {
     },
     resetVerify(payload: { email: string; code: string; password: string }): Promise<{ token: string; user: AccountUser }> {
       return request('/api/auth/reset/verify', {
+        credentials: config.sessionBroker ? 'include' : 'omit',
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
     },
@@ -77,7 +86,10 @@ export function createPassportApi(config: PassportConfig) {
       });
     },
     logout(token: string): Promise<unknown> {
-      return request('/api/auth/logout', { method: 'POST', headers: authHeaders(token), body: '{}' });
+      return request('/api/auth/logout', {
+        method: 'POST', headers: authHeaders(token), body: '{}',
+        credentials: config.sessionBroker ? 'include' : 'omit', cache: 'no-store',
+      });
     },
     setPassword(token: string, payload: { currentPassword?: string; newPassword: string }): Promise<unknown> {
       return request('/api/auth/password', {
@@ -109,16 +121,21 @@ export function createPassportApi(config: PassportConfig) {
     removeAvatar(token: string): Promise<unknown> {
       return request('/api/auth/avatar', { method: 'DELETE', headers: authHeaders(token) });
     },
-    async googleResult(state: string): Promise<{ pending?: boolean; token?: string; user?: AccountUser; error?: string }> {
-      const response = await fetch(joinUrl(config.authOrigin, `/api/auth/google/result?state=${encodeURIComponent(state)}`));
+    googleStart(payload: { origin: string; state: string; codeChallenge: string }, signal: AbortSignal): Promise<{ url: string }> {
+      return request('/api/auth/google/start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        credentials: 'include', cache: 'no-store', signal,
+      });
+    },
+    async googleResult(state: string, codeVerifier: string): Promise<{ pending?: boolean; token?: string; user?: AccountUser; error?: string }> {
+      const response = await fetch(joinUrl(config.authOrigin, '/api/auth/google/result'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, codeVerifier }), credentials: 'omit', cache: 'no-store',
+      });
       const body = await parseJson<{ pending?: boolean; token?: string; user?: AccountUser; error?: string }>(response);
       if (response.status === 202) return body;
       if (!response.ok) throw new ApiError(body.error || `request_${response.status}`, body.retryAfterMs);
       return body;
-    },
-    googleStartUrl(origin: string, state?: string): string {
-      const query = `origin=${encodeURIComponent(origin)}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
-      return joinUrl(config.authOrigin, `/api/auth/google/start?${query}`);
     }
   };
 }
