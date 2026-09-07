@@ -30,7 +30,7 @@ const ERROR_TEXT: Record<string, [string, string]> = {
   rate_limited: ['操作过于频繁，请稍后再试', '操作過於頻繁，請稍後再試'],
   oauth_failed: ['Google 登录失败，请重试', 'Google 登入失敗，請重試'],
   unauthorized: ['登录已失效，请重新登录', '登入已失效，請重新登入'],
-  invalid_display_name: ['用户名最多 32 个字符', '使用者名稱最多 32 個字元'],
+  invalid_display_name: ['昵称最多 32 个字符', '暱稱最多 32 個字元'],
   invalid_bio: ['简介最多 50 个字符', '簡介最多 50 個字元'],
   invalid_website: ['网址需以 http(s):// 开头', '網址需以 http(s):// 開頭'],
   invalid_public_email: ['公开邮箱格式不正确', '公開電子郵件格式不正確']
@@ -531,7 +531,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     const renderIdLine = (): void => {
       const name = h(
         'strong',
-        { class: 'auth-name', role: 'button', tabindex: '0', title: text('点击修改用户名', '點按修改使用者名稱') },
+        { class: 'auth-name', role: 'button', tabindex: '0', title: text('点击修改昵称', '點按修改暱稱') },
         [account!.displayName]
       );
       const row = h('div', { class: 'auth-name-row' }, [name]);
@@ -539,7 +539,7 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
         row.append(h('span', { class: 'auth-handle' }, [`@${account!.username}`]));
       }
       const startEdit = (): void => {
-        const nameInput = input('text', text('用户名（留空恢复默认）', '使用者名稱（留空恢復預設）'), { maxlength: '32' });
+        const nameInput = input('text', text('昵称（留空恢复默认）', '暱稱（留空恢復預設）'), { maxlength: '32' });
         nameInput.value = account!.displayName;
         const save = h('button', { class: 'auth-submit small', type: 'button' }, [text('保存', '儲存')]);
         const cancel = h('button', { class: 'auth-text', type: 'button' }, ['取消']);

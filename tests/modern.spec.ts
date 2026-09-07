@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { CommentController } from '../services/sicsic-comment-ui/src/core';
 import type { CommentItem } from '../services/sicsic-comment-ui/src/types';
+import { mockEmptySessionBroker } from './fixtures/passport-broker';
 
 const articlePath = '/2026/08/23/twenty-ten-on-astro/';
 const commentsOrigin = 'https://comments.sicnu.pics.tchirek.top';
@@ -16,6 +17,7 @@ async function mockBuiltCommentUi(page: Page, options: {
   parentOrigin?: string;
 } = {}) {
   let posted = false;
+  await mockEmptySessionBroker(page.context());
   await page.route(`${commentsOrigin}/**`, async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
@@ -34,6 +36,7 @@ async function mockBuiltCommentUi(page: Page, options: {
     });
   });
   await page.route(`${options.apiOrigin ?? 'https://api.pics.tchirek.top'}/**`, async (route) => {
+    if (/^\/api\/auth\/sso(?:\/|$)/.test(new URL(route.request().url()).pathname)) return route.fallback();
     const headers = {
       'Access-Control-Allow-Origin': route.request().headers().origin || hostOrigin,
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Viewer-Id',
@@ -192,7 +195,7 @@ test('responsive header keeps downstream layout stable within height bands', asy
 test('navigation, focus, and responsive layout remain usable', async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.locator('.site-title')).toHaveText('Tchirek Afra');
+  await expect(page.getByRole('link', { name: 'Tchirek的文存' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
   const license = page.getByRole('link', { name: 'CC BY-NC-SA 4.0 (opens in a new tab)' });
   await expect(license).toHaveAttribute('href', 'https://creativecommons.org/licenses/by-nc-sa/4.0/');
@@ -357,6 +360,7 @@ test('Blog comments are native, lazy, and anonymous-first until a deliberate act
   const author = comments.getByRole('button', { name: '查看 Historical signature 的個人檔案' });
   await author.click();
   await expect(comments.getByRole('dialog', { name: '個人檔案' })).toContainText('Current profile name');
+  await expect(comments.locator('.profile-card .auth-id > .auth-muted')).toHaveText('@reader');
   await expect(comments.locator('.comment-name')).toHaveText('Historical signature');
   expect(requests.some((url) => /\/passport[-.]/.test(url))).toBe(true);
   expect(requests.some((url) => url.includes('/api/auth/me'))).toBe(false);

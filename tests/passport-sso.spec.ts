@@ -1,0 +1,274 @@
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { extname, resolve, sep } from 'node:path';
+import { createHash } from 'node:crypto';
+import {
+  account, authOrigin, blogOrigin, commentsOrigin, docsOrigin, googleOrigin, mockPassportBroker, picsOrigin, sessionKey,
+} from './fixtures/passport-broker';
+
+const articlePath = '/2026/08/23/twenty-ten-on-astro/';
+const docsApi = 'https://api.docs.tchirek.top';
+const contentTypes: Record<string, string> = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.webp': 'image/webp', '.json': 'application/json',
+};
+
+async function serveBuild(context: BrowserContext, origin: string, directory: string) {
+  const root = resolve(directory);
+  await context.route((url) => url.origin === origin, async (route) => {
+    const path = decodeURIComponent(new URL(route.request().url()).pathname);
+    const target = resolve(root, `.${path.endsWith('/') ? `${path}index.html` : path}`);
+    if (!target.startsWith(root + sep)) return route.abort();
+    try {
+      await route.fulfill({ body: await readFile(target), contentType: contentTypes[extname(target)] || 'application/octet-stream',
+        headers: origin === commentsOrigin ? {
+          'Cross-Origin-Embedder-Policy': 'credentialless',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
+          'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src https: data:; connect-src ${authOrigin} ${docsApi}; frame-ancestors ${picsOrigin} ${docsOrigin}; base-uri 'none'; form-action 'none'; object-src 'none'`,
+        } : {},
+      });
+    } catch {
+      await route.fulfill({ status: 404, body: 'Not found' });
+    }
+  });
+}
+
+async function setup(context: BrowserContext) {
+  // Every production-looking origin in this test is fulfilled locally, including popup navigation.
+  await context.route('**/*', (route) => route.abort());
+  const broker = await mockPassportBroker(context);
+  const requests: string[] = [];
+  context.on('request', (request) => requests.push(request.url()));
+  await serveBuild(context, blogOrigin, 'dist');
+  await serveBuild(context, commentsOrigin, 'services/sicsic-comment-ui/dist');
+  for (const [origin, preset] of [[picsOrigin, 'normalpics'], [docsOrigin, 'normaldocs']]) {
+    await context.route((url) => url.origin === origin, (route) => route.fulfill({
+      contentType: 'text/html',
+      body: `<!doctype html><html><body><script>
+        addEventListener('message', event => {
+          const frame = document.querySelector('iframe');
+          if (event.origin !== ${JSON.stringify(commentsOrigin)} || event.source !== frame.contentWindow) return;
+          if (event.data?.type === 'comment-ui:ready') frame.contentWindow.postMessage(
+            ${JSON.stringify({ type: 'normalpics:context', imageId: `sso:${preset}` })}, ${JSON.stringify(commentsOrigin)});
+        });
+      </script><iframe id="panel-frame" title="Comments" width="420" height="720"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        src="${commentsOrigin}/?preset=${preset}"></iframe></body></html>`,
+    }));
+  }
+  const publications: Array<{ origin: string; content: string; authorization?: string; viewer?: string }> = [];
+  await context.route((url) => [authOrigin, docsApi].includes(url.origin) && url.pathname === '/api/comment', async (route) => {
+    const request = route.request();
+    const headers = await request.allHeaders();
+    const responseHeaders = {
+      'Access-Control-Allow-Origin': headers.origin || blogOrigin,
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Viewer-Id',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Content-Type': 'application/json',
+    };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: responseHeaders });
+    if (request.method() === 'POST') {
+      if (headers.authorization && !broker.authorized(headers.authorization.replace(/^Bearer /, ''))) {
+        return route.fulfill({ status: 401, headers: responseHeaders, body: '{"error":"unauthorized"}' });
+      }
+      const payload = request.postDataJSON() as { content: string };
+      publications.push({ origin: new URL(request.url()).origin, content: payload.content, authorization: headers.authorization, viewer: headers['x-viewer-id'] });
+      return route.fulfill({ status: 201, headers: responseHeaders, body: '{"id":"sso-comment"}' });
+    }
+    return route.fulfill({ headers: responseHeaders, body: '{"items":[]}' });
+  });
+  return { broker, publications, requests };
+}
+
+async function mount(page: Page, kind: 'blog' | 'normalpics' | 'normaldocs') {
+  await page.goto(kind === 'blog' ? blogOrigin + articlePath : kind === 'normalpics' ? picsOrigin : docsOrigin);
+  const comments = kind === 'blog' ? page.locator('#comments') : page.frameLocator('#panel-frame').locator('#app');
+  await comments.scrollIntoViewIfNeeded();
+  await expect(comments.locator('textarea')).toBeVisible();
+  return comments;
+}
+
+async function openIdentity(comments: Locator) {
+  const drawer = comments.locator('.composer-options');
+  if (await drawer.count() && await drawer.getAttribute('open') === null) await drawer.locator('summary').click();
+  await comments.locator('.account').click();
+}
+
+async function expectPrivateCookie(context: BrowserContext, setCookies: string[], name: string) {
+  const cookie = (await context.cookies(authOrigin)).find((cookie) => cookie.name === name);
+  expect(cookie).toMatchObject({ httpOnly: true, secure: true, path: '/' });
+  // Windows WebKit reports SameSite=None even for a fulfilled Lax response; check the sent header.
+  expect(setCookies.find((header) => header.startsWith(`${name}=`))).toMatch(/;\s*SameSite=Lax(?:;|$)/i);
+}
+
+async function login(comments: Locator, context: BrowserContext, setCookies: string[]) {
+  await openIdentity(comments);
+  const dialog = comments.locator('.auth-entry-card');
+  await expect(dialog).toBeVisible();
+  await dialog.locator('[autocomplete="username"]').fill(account.username!);
+  await dialog.locator('[autocomplete="current-password"]').fill('test-only-password');
+  await dialog.locator('.auth-submit').click();
+  await expect(comments.locator('.account')).toHaveClass(/signed-in/);
+  await expect.poll(async () => (await context.cookies(authOrigin)).some((cookie) => cookie.name === '__Host-sicsic-session')).toBe(true);
+  await expectPrivateCookie(context, setCookies, '__Host-sicsic-session');
+}
+
+test('one password login continues on Pics, Blog and Docs without any popup; logout revokes all copies', async ({ context, page }) => {
+  const { broker, publications } = await setup(context);
+  const first = await mount(page, 'blog');
+  expect(broker.calls).toEqual([]);
+  let popups = 0;
+  page.on('popup', () => popups++);
+  await login(first, context, broker.setCookies);
+  const token = broker.token();
+  for (const kind of ['normalpics', 'normaldocs', 'blog'] as const) {
+    await page.goto('about:blank');
+    const comments = await mount(page, kind);
+    await comments.evaluate((_el, key) => localStorage.removeItem(key), sessionKey);
+    await openIdentity(comments);
+    await expect(comments.locator('.account')).toHaveClass(/signed-in/);
+    await expect(comments.locator('.account-label')).toHaveText(account.displayName);
+    expect(broker.calls.some(call => call.path === '/api/auth/sso/session' && call.hasCookie)).toBe(true);
+    await page.keyboard.press('Escape');
+    await comments.locator('textarea').fill(`Signed in on ${kind}`);
+    await comments.locator('.submit').click();
+    await expect.poll(() => publications.some(item => item.content === `Signed in on ${kind}` && item.authorization === `Bearer ${token}`)).toBe(true);
+  }
+  const comments = page.locator('#comments');
+  await openIdentity(comments);
+  await comments.locator('.auth-foot .danger').click();
+  await expect(comments.locator('.account')).not.toHaveClass(/signed-in/);
+  expect(broker.authorized(token)).toBe(false);
+  const panel = await mount(page, 'normalpics');
+  await panel.evaluate((_el, data) => localStorage.setItem(data.key, data.token), { key: sessionKey, token });
+  await openIdentity(panel);
+  await expect(page.frameLocator('#panel-frame').locator('.auth-entry-card')).toBeVisible();
+  await expect(panel.locator('.account')).not.toHaveClass(/signed-in/);
+  expect(broker.loginCount()).toBe(1);
+  expect(popups).toBe(0);
+});
+
+test('Google opens directly and PKCE polling works with no WindowProxy or opener', async ({ context, page }) => {
+  const { broker, requests } = await setup(context);
+  await context.addInitScript(() => {
+    const open = window.open.bind(window);
+    window.open = (...args) => { open(...args); return null; };
+  });
+  const comments = await mount(page, 'normalpics');
+  await openIdentity(comments);
+  const dialog = page.frameLocator('#panel-frame').locator('.auth-entry-card');
+  const google = dialog.getByRole('button', { name: '使用 Google 登录' });
+  await expect(google).toBeEnabled();
+  const opened = context.waitForEvent('page');
+  await google.click();
+  const popup = await opened;
+  await expect(popup.getByRole('heading', { name: 'Fixture Google sign-in' })).toBeVisible();
+  expect(new URL(popup.url()).origin).toBe(googleOrigin);
+  expect(await popup.evaluate(() => window.opener)).toBeNull();
+  expect(context.pages()).toHaveLength(2);
+  const callback = popup.waitForResponse(response => response.url().includes('/callback/google'));
+  await popup.getByRole('link', { name: 'Complete Google sign-in' }).click();
+  expect((await callback).status()).toBe(200);
+  await expect(comments.locator('.account')).toHaveClass(/signed-in/);
+  const start = broker.calls.find(call => call.path === '/api/auth/google/start')!;
+  const poll = broker.calls.find(call => call.path === '/api/auth/google/result')!;
+  expect(createHash('sha256').update(poll.body.codeVerifier).digest('base64url')).toBe(start.body.codeChallenge);
+  expect(requests.some(url => url.includes(poll.body.codeVerifier) || url.includes(broker.token()))).toBe(false);
+  await popup.close();
+  const blog = await mount(page, 'blog');
+  await openIdentity(blog);
+  await expect(blog.locator('.account')).toHaveClass(/signed-in/);
+  expect(broker.loginCount()).toBe(0);
+});
+
+test('failed password and unavailable continuity keep the login form usable without popups', async ({ context, page }) => {
+  const { broker } = await setup(context);
+  broker.failSession();
+  const comments = await mount(page, 'normalpics');
+  let popups = 0;
+  page.on('popup', () => popups++);
+  await openIdentity(comments);
+  const dialog = page.frameLocator('#panel-frame').locator('.auth-entry-card');
+  await dialog.locator('[autocomplete="username"]').fill('wrong');
+  await dialog.locator('[autocomplete="current-password"]').fill('wrong');
+  await dialog.locator('.auth-submit').click();
+  await expect(dialog.locator('.auth-error')).toContainText('用户名或密码错误');
+  await expect(dialog.locator('.auth-error')).not.toContainText('弹窗');
+  expect(popups).toBe(0);
+});
+
+test('slow continuity shows a complete login form first and never replaces a draft', async ({ context, page }) => {
+  const { broker, requests } = await setup(context);
+  await login(await mount(page, 'blog'), context, broker.setCookies);
+  const panel = await mount(page, 'normalpics');
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await context.route(`${authOrigin}/api/auth/sso/session`, async route => {
+    await gate;
+    await route.fallback();
+  });
+  const before = broker.calls.length;
+  await panel.locator('.account').hover();
+  await expect.poll(() => requests.some(url => url.startsWith(commentsOrigin) && /\/passport[-.]/.test(url))).toBe(true);
+  expect(broker.calls).toHaveLength(before);
+  await panel.evaluate(() => {
+    const observer = new MutationObserver(() => {
+      const dialog = document.querySelector('.auth-card');
+      if (!dialog) return;
+      document.documentElement.dataset.firstAccountDialog = dialog.querySelector('[autocomplete="username"]') ? 'login' : 'placeholder';
+      observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+  await openIdentity(panel);
+  const frame = page.frameLocator('#panel-frame');
+  await expect(frame.getByRole('dialog')).toBeVisible({ timeout: 1000 });
+  await expect(frame.locator('html')).toHaveAttribute('data-first-account-dialog', 'login');
+  const draft = frame.locator('[autocomplete="username"]');
+  await expect(draft).toBeVisible({ timeout: 1000 });
+  await draft.fill('my unfinished login');
+  const restored = page.waitForResponse(`${authOrigin}/api/auth/sso/session`);
+  release();
+  await restored;
+  await expect(draft).toHaveValue('my unfinished login');
+  await expect(panel.locator('.account')).not.toHaveClass(/signed-in/);
+  await page.keyboard.press('Escape');
+  await expect(frame.getByRole('dialog')).toHaveCount(0);
+  await openIdentity(panel);
+  await expect(panel.locator('.account')).toHaveClass(/signed-in/);
+});
+
+test('the frame attribution links to the public SicSic repository', async ({ context, page }) => {
+  await setup(context);
+  const comments = await mount(page, 'normaldocs');
+  await expect(comments.locator('.source-link')).toHaveAttribute('href', 'https://github.com/Tchirek/SicSic');
+});
+
+test('the account handle keeps its historical position beside the editable nickname', async ({ context, page }) => {
+  const { broker } = await setup(context);
+  await login(await mount(page, 'blog'), context, broker.setCookies);
+  const panel = await mount(page, 'normalpics');
+  await openIdentity(panel);
+  const frame = page.frameLocator('#panel-frame');
+  const handle = frame.locator('.auth-name-row > .auth-handle');
+  await expect(handle).toHaveText(`@${account.username}`);
+  await expect(handle).toBeVisible();
+  await frame.locator('.auth-name').click();
+  await frame.getByPlaceholder('昵称（留空恢复默认）').fill('A very long nickname for editing');
+  await frame.locator('.auth-name-editor').getByRole('button', { name: '取消', exact: true }).click();
+  await expect(handle).toHaveText(`@${account.username}`);
+  await expect(handle).toBeInViewport();
+});
+
+test('blocked local storage still permits cookie-based continuity', async ({ context, page }) => {
+  const { broker } = await setup(context);
+  await context.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage blocked'); } });
+  });
+  const comments = await mount(page, 'blog');
+  await login(comments, context, broker.setCookies);
+  const panel = await mount(page, 'normaldocs');
+  await openIdentity(panel);
+  await expect(panel.locator('.account')).toHaveClass(/signed-in/);
+  expect(broker.calls.some(call => call.path === '/api/auth/sso/session' && call.hasCookie)).toBe(true);
+});

@@ -81,3 +81,5 @@ CI fails above 12 KiB gzip for core + inline bootstrap, 4 KiB for Blog comment C
 - No claim that shorter-lived viewer IDs solve XSS or that client hiding replaces server authorization.
 
 See [THREAT_MODEL.md](THREAT_MODEL.md) for the remaining security and deployment boundaries.
+
+The account backend must expose GET /api/auth/profiles and POST /api/auth/profile and include authorId for verified comments. Public profile fields must respect their visibility settings. Password login accepts the original username (without @) or email, never the editable nickname.
