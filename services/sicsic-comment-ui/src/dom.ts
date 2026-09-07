@@ -93,7 +93,7 @@ export function mountApp(app: HTMLElement, config: CommentUiConfig): CommentElem
     ${composerMarkup}
     <section class="comment-list" aria-live="polite"></section>
     <footer>
-      Powered by <a class="source-link" target="_blank" rel="noreferrer">SicSic v0.1.2</a>
+      Powered by <a class="source-link" target="_blank" rel="noreferrer">SicSic v0.1.3</a>
     </footer>
   `;
 

@@ -868,32 +868,20 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     activated = true;
     const attempt = generation;
     const previousAccount = account?.id;
-    let entry: HTMLElement | null = null;
-    let fallbackTimer = 0;
     if (account) showProfile();
     else {
-      const { root, body } = card(text('SicSic 通行证', 'SicSic 通行證'));
-      root.classList.add('auth-entry-card');
-      body.append(h('p', { class: 'auth-hint', role: 'status' }, [text('正在确认登录状态…', '正在確認登入狀態…')]));
-      openOverlay(root);
-      // Give a quick restore time to avoid flashing a login form at signed-in
-      // readers. A slow request must never hold the form behind the network.
-      fallbackTimer = window.setTimeout(() => {
-        if (destroyed || attempt !== generation) return;
-        entry = showLogin();
-        const keepDraft = (): void => { if (attempt === generation) generation += 1; };
-        // Capture before submit/Google handlers create their own auth attempt.
-        entry.addEventListener('input', keepDraft, { once: true, capture: true });
-        entry.addEventListener('click', keepDraft, { once: true, capture: true });
-      }, 200);
+      const entry = showLogin();
+      const keepDraft = (): void => { if (attempt === generation) generation += 1; };
+      // Capture before submit/Google handlers create their own auth attempt.
+      entry.addEventListener('input', keepDraft, { once: true, capture: true });
+      entry.addEventListener('click', keepDraft, { once: true, capture: true });
     }
     void refresh().then(() => {
-      window.clearTimeout(fallbackTimer);
       if (destroyed || attempt !== generation) return;
       onChange();
       if (account) {
         if (account.id !== previousAccount) showProfile();
-      } else if (previousAccount || !entry) showLogin();
+      } else if (previousAccount) showLogin();
     });
   }
 

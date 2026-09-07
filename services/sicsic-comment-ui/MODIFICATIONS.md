@@ -81,3 +81,5 @@ non-goals and backend rollout gates are in `INTEGRATION.md` and `THREAT_MODEL.md
 Replace account/password/logout popup transport with credentialed same-site session requests. Open only Google directly, retaining browser nonce and PKCE result validation. Point frame attribution to the public SicSic repository; continue shipping the corresponding-source archive.
 
 v0.1.2 shows the account dialog before session lookup completes, with a 200 ms login-form fallback and draft protection. Hover/focus preloads only the UI module; network identity lookup still requires account activation.
+
+v0.1.3 removes the intermediate status card and timer. The complete login form or known account appears immediately; session restoration stays in the background and preserves active input.
