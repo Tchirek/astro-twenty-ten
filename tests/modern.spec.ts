@@ -195,7 +195,7 @@ test('responsive header keeps downstream layout stable within height bands', asy
 test('navigation, focus, and responsive layout remain usable', async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Tchirek的文存' })).toBeVisible();
+  await expect(page.locator('.site-title')).toHaveText('Tchirek Afra');
   await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
   const license = page.getByRole('link', { name: 'CC BY-NC-SA 4.0 (opens in a new tab)' });
   await expect(license).toHaveAttribute('href', 'https://creativecommons.org/licenses/by-nc-sa/4.0/');
