@@ -75,6 +75,13 @@ function commentRank(a: CommentItem, b: CommentItem): number {
   return b.createdAt - a.createdAt;
 }
 
+export function updateLikeButton(button: HTMLButtonElement, item: Pick<CommentItem, 'likedByMe' | 'likeCount'>): void {
+  button.classList.toggle('liked', item.likedByMe);
+  button.setAttribute('aria-pressed', String(item.likedByMe));
+  const count = button.querySelector('span');
+  if (count) count.textContent = item.likeCount > 0 ? String(item.likeCount) : '';
+}
+
 function createCommentNode(
   item: CommentItem,
   elements: CommentElements,
@@ -205,7 +212,8 @@ function createCommentNode(
   likeButton.title = traditional ? '喜歡' : '喜欢';
   likeButton.setAttribute('aria-label', traditional ? '喜歡' : '喜欢');
   likeButton.setAttribute('aria-pressed', item.likedByMe ? 'true' : 'false');
-  likeButton.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6z"/></svg>${item.likeCount > 0 ? `<span>${item.likeCount}</span>` : ''}`;
+  likeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6z"/></svg><span></span>';
+  updateLikeButton(likeButton, item);
   likeButton.addEventListener('click', () => options.onLike(item));
   actions.append(replyButton, likeButton);
 

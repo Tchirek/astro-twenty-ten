@@ -323,6 +323,7 @@ input:focus, textarea:focus { border-color: var(--field-focus); }
 }
 .comment-head time { color: var(--faint); font-size: 9px; }
 .comment-actions { margin-top: 7px; gap: 2px; }
+.comment-actions button { flex-shrink: 0; white-space: nowrap; }
 .comment-actions .like-button {
   min-width: 28px;
   height: 28px;
@@ -347,6 +348,7 @@ input:focus, textarea:focus { border-color: var(--field-focus); }
   transition: fill 0.16s ease, transform 0.16s ease;
 }
 .comment-actions .like-button span {
+  min-width: 2ch;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }

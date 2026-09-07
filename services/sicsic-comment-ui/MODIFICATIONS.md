@@ -83,3 +83,5 @@ Replace account/password/logout popup transport with credentialed same-site sess
 v0.1.2 shows the account dialog before session lookup completes, with a 200 ms login-form fallback and draft protection. Hover/focus preloads only the UI module; network identity lookup still requires account activation.
 
 v0.1.3 removes the intermediate status card and timer. The complete login form or known account appears immediately; session restoration stays in the background and preserves active input.
+
+v0.1.4 preserves the historical @handle placement, distinguishes editable nicknames from login identifiers, and updates likes immediately without rebuilding or reordering comments. Consecutive clicks are coalesced into serialized writes; failed writes restore the confirmed state.

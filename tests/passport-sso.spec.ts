@@ -244,6 +244,43 @@ test('the frame attribution links to the public SicSic repository', async ({ con
   await expect(comments.locator('.source-link')).toHaveAttribute('href', 'https://github.com/Tchirek/SicSic');
 });
 
+test('rapid likes stay optimistic, coalesce writes, and keep the reply label still', async ({ context, page }) => {
+  await setup(context);
+  const items = [0, 1].map(index => ({
+    id: `like-${index}`, imageId: 'sso:normalpics', rootId: `like-${index}`, parentId: null,
+    nickname: `Reader ${index}`, content: 'A comment', html: '<p>A comment</p>',
+    createdAt: index + 1, likeCount: 0, likedByMe: false
+  }));
+  const writes: Array<{ liked: boolean; release: () => void }> = [];
+  await context.route(url => url.origin === authOrigin && url.pathname.startsWith('/api/comment'), async route => {
+    const req = route.request();
+    const headers = { 'Access-Control-Allow-Origin': commentsOrigin, 'Access-Control-Allow-Headers': 'Content-Type,X-Viewer-Id', 'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS' };
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (req.method() === 'GET') return route.fulfill({ headers, json: { items } });
+    const liked = req.postDataJSON().liked as boolean;
+    await new Promise<void>(release => { writes.push({ liked, release }); });
+    return route.fulfill({ headers, json: { likedByMe: liked, likeCount: Number(liked) } });
+  });
+  const panel = await mount(page, 'normalpics');
+  const comment = panel.locator('[data-id="like-0"]');
+  const like = comment.locator('.like-button');
+  const reply = comment.getByRole('button', { name: '回复', exact: true });
+  const before = await reply.boundingBox();
+  for (const pressed of [true, false, true, false]) {
+    await like.click();
+    await expect(like).toHaveAttribute('aria-pressed', String(pressed));
+    expect(await reply.boundingBox()).toEqual(before);
+  }
+  await expect.poll(() => writes.length).toBe(1);
+  writes[0].release();
+  await expect.poll(() => writes.length).toBe(2);
+  await expect(like).toHaveAttribute('aria-pressed', 'false');
+  writes[1].release();
+  expect(writes.map(write => write.liked)).toEqual([true, false]);
+  await expect(like.locator('span')).toHaveText('');
+  expect(await reply.boundingBox()).toEqual(before);
+});
+
 test('the account handle keeps its historical position beside the editable nickname', async ({ context, page }) => {
   const { broker } = await setup(context);
   await login(await mount(page, 'blog'), context, broker.setCookies);

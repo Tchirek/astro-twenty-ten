@@ -153,7 +153,7 @@
 .comments .markdown pre { overflow: auto; padding: 10px; background: var(--code-bg); }
 .comments .markdown blockquote { margin: 8px 0; padding-left: 10px; border-left: 2px solid var(--quote-line); }
 .comments .comment-actions { display: flex; align-items: center; min-height: 24px; margin: 0; padding: 0 0 24px; gap: 8px; font: 12px/24px "Helvetica Neue", Arial, Helvetica, "Nimbus Sans L", "Microsoft YaHei", sans-serif; }
-.comments .comment-actions button { padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-size: 12px; line-height: 24px; }
+.comments .comment-actions button { padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-size: 12px; line-height: 24px; flex-shrink: 0; white-space: nowrap; }
 .comments .comment-actions button:hover { color: var(--hover-text); }
 .comments .like-button { display: inline-flex; align-items: center; justify-content: center; gap: 3px; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; }
 .comments .like-button svg { display: none; }

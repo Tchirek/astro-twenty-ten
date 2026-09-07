@@ -1,7 +1,7 @@
 import { ApiError, createCommentApi } from './api';
 import type { CommentInitOptions, CommentUpdate } from './config';
 import { resolveConfig } from './config';
-import { commentNickname, renderComments } from './comments';
+import { commentNickname, renderComments, updateLikeButton } from './comments';
 import { mountApp } from './dom';
 import type { AccountUser, CommentAppState, CommentItem } from './types';
 
@@ -54,7 +54,13 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     loadError: '',
     previewing: false
   };
-  const pendingLikes = new Set<string>();
+  type PendingLike = {
+    item: CommentItem;
+    subject: string;
+    confirmed: Pick<CommentItem, 'likedByMe' | 'likeCount'>;
+    desired: boolean;
+  };
+  const pendingLikes = new Map<string, PendingLike>();
   let editingId = '';
   let destroyed = false;
   let fallbackViewerId = '';
@@ -275,6 +281,13 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
       const response = await api.list(requestedImageId);
       if (destroyed || requestedImageId !== state.imageId) return;
       state.comments = response.items;
+      for (const item of state.comments) {
+        const pending = pendingLikes.get(item.id);
+        if (pending && pending.subject === requestedImageId) {
+          pending.item = item;
+          paintLike(pending);
+        }
+      }
       state.loadedImageId = requestedImageId;
       hooks.onLoaded?.({
         subject: requestedImageId,
@@ -369,24 +382,44 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     }
   }
 
+  function paintLike(pending: PendingLike): void {
+    const { item, confirmed, desired, subject } = pending;
+    item.likedByMe = desired;
+    item.likeCount = Math.max(0, confirmed.likeCount + Number(desired) - Number(confirmed.likedByMe));
+    if (destroyed || state.imageId !== subject) return;
+    const button = elements.list.querySelector<HTMLButtonElement>(`[data-id="${CSS.escape(item.id)}"] .like-button`);
+    if (button) updateLikeButton(button, item);
+  }
+
   async function toggleLike(item: CommentItem): Promise<void> {
-    if (pendingLikes.has(item.id)) return;
-    const previous = { likedByMe: item.likedByMe, likeCount: item.likeCount };
-    const nextLiked = !item.likedByMe;
-    item.likedByMe = nextLiked;
-    item.likeCount = Math.max(0, item.likeCount + (nextLiked ? 1 : -1));
-    pendingLikes.add(item.id);
-    render();
+    const existing = pendingLikes.get(item.id);
+    if (existing) {
+      existing.desired = !existing.desired;
+      paintLike(existing);
+      return;
+    }
+    const pending: PendingLike = {
+      item, subject: state.imageId,
+      confirmed: { likedByMe: item.likedByMe, likeCount: item.likeCount },
+      desired: !item.likedByMe
+    };
+    pendingLikes.set(item.id, pending);
+    paintLike(pending);
     try {
-      const result = await api.setLike(item.id, nextLiked);
-      item.likedByMe = result.likedByMe;
-      item.likeCount = result.likeCount;
-      render();
+      // Serialize writes and coalesce intervening clicks to the latest intent.
+      // Updating only this button keeps the list, reply labels and focus still.
+      do {
+        const sent = pending.desired;
+        pending.confirmed = await api.setLike(item.id, sent);
+        if (pending.desired === sent) pending.desired = pending.confirmed.likedByMe;
+        paintLike(pending);
+      } while (!destroyed && pending.desired !== pending.confirmed.likedByMe);
     } catch {
-      item.likedByMe = previous.likedByMe;
-      item.likeCount = previous.likeCount;
-      render();
-      elements.status.textContent = config.locale === 'zh-TW' ? '操作失敗' : '操作失败';
+      pending.desired = pending.confirmed.likedByMe;
+      paintLike(pending);
+      if (!destroyed && state.imageId === pending.subject) {
+        elements.status.textContent = config.locale === 'zh-TW' ? '操作失敗' : '操作失败';
+      }
     } finally {
       pendingLikes.delete(item.id);
     }
