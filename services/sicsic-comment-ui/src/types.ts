@@ -7,7 +7,8 @@ export interface CommentItem {
   parentId: string | null;
   nickname: string;
   content: string;
-  html: string;
+  /** Legacy backend field; never inserted into the document. */
+  html?: string;
   createdAt: number;
   likeCount: number;
   likedByMe: boolean;
@@ -60,7 +61,6 @@ export interface CommentAppState {
   comments: CommentItem[];
   loadedImageId: string;
   loading: boolean;
-  loadAgain: boolean;
   loadError: string;
   previewing: boolean;
 }

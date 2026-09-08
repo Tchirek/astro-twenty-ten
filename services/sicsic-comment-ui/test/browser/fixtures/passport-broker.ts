@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { BrowserContext, Route } from '@playwright/test';
-import type { AccountUser } from '../../services/sicsic-comment-ui/src/types';
+import type { AccountUser } from '../../../src/types';
 
 export const authOrigin = 'https://api.pics.tchirek.top';
 export const blogOrigin = 'https://blog.tchirek.top';

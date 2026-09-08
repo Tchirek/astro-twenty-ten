@@ -1,14 +1,22 @@
 import type { CommentUiConfig } from './config';
 import type { CommentItem } from './types';
 
-export class ApiError extends Error {
-  readonly retryAfterMs: number | null;
+export { ApiError } from './response';
+import { readResponse, record, requireShape } from './response';
 
-  constructor(message: string, retryAfterMs?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.retryAfterMs = Number.isFinite(retryAfterMs) ? Number(retryAfterMs) : null;
-  }
+function validateComment(value: unknown): void {
+  requireShape(record(value));
+  for (const key of ['id', 'imageId', 'rootId', 'nickname', 'content']) requireShape(typeof value[key] === 'string');
+  requireShape(value.parentId === null || typeof value.parentId === 'string');
+  requireShape(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt));
+  validateLike(value);
+  for (const key of ['verified', 'ownedByMe', 'editable']) requireShape(value[key] === undefined || typeof value[key] === 'boolean');
+  for (const key of ['authorId', 'authorAvatar', 'osLabel']) requireShape(value[key] == null || typeof value[key] === 'string');
+  requireShape(value.authorBadge == null || ['none', 'cockade', 'seal'].includes(String(value.authorBadge)));
+}
+
+function validateLike(value: Record<string, unknown>): void {
+  requireShape(typeof value.likedByMe === 'boolean' && typeof value.likeCount === 'number' && Number.isSafeInteger(value.likeCount) && value.likeCount >= 0);
 }
 
 export interface ApiContext {
@@ -32,16 +40,6 @@ function joinUrl(origin: string, path: string): string {
   return `${origin}${path}`;
 }
 
-async function parseJson<T>(response: Response): Promise<T & { error?: string; retryAfterMs?: number }> {
-  const text = await response.text();
-  if (!text) return {} as T & { error?: string; retryAfterMs?: number };
-  try {
-    return JSON.parse(text) as T & { error?: string; retryAfterMs?: number };
-  } catch {
-    return {} as T & { error?: string; retryAfterMs?: number };
-  }
-}
-
 export function createCommentApi(config: CommentUiConfig, context: ApiContext) {
   function readHeaders(viewerId = ''): HeadersInit {
     const result: Record<string, string> = {};
@@ -62,18 +60,25 @@ export function createCommentApi(config: CommentUiConfig, context: ApiContext) {
     return result;
   }
 
-  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response = await fetch(joinUrl(config.apiOrigin, path), init);
-    const body = await parseJson<T>(response);
-    if (!response.ok) throw new ApiError(body.error || `request_${response.status}`, body.retryAfterMs);
-    return body;
+  async function request<T>(path: string, init: RequestInit = {}, validate?: (body: Record<string, unknown>) => void): Promise<T> {
+    const response = await fetch(joinUrl(config.apiOrigin, path), {
+      ...init, signal: init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000)
+    });
+    const body = await readResponse(response);
+    validate?.(body);
+    return body as T;
   }
 
   return {
-    list(imageId: string): Promise<{ items: CommentItem[]; commentedByMe?: boolean }> {
+    list(imageId: string, signal?: AbortSignal): Promise<{ items: CommentItem[]; commentedByMe?: boolean }> {
       return request<{ items: CommentItem[]; commentedByMe?: boolean }>(
         `/api/comment?imageId=${encodeURIComponent(imageId)}`,
-        { headers: readHeaders(context.peekSessionViewerId()) }
+        { headers: readHeaders(context.peekSessionViewerId()), signal },
+        body => {
+          requireShape(Array.isArray(body.items));
+          body.items.forEach(validateComment);
+          requireShape(body.commentedByMe === undefined || typeof body.commentedByMe === 'boolean');
+        }
       );
     },
 
@@ -90,7 +95,7 @@ export function createCommentApi(config: CommentUiConfig, context: ApiContext) {
         method: 'PUT',
         headers: writeHeaders(),
         body: JSON.stringify({ content })
-      });
+      }, validateComment);
     },
 
     setLike(commentId: string, liked: boolean): Promise<{ likedByMe: boolean; likeCount: number }> {
@@ -98,7 +103,7 @@ export function createCommentApi(config: CommentUiConfig, context: ApiContext) {
         method: 'PUT',
         headers: writeHeaders(context.requireSessionViewerId()),
         body: JSON.stringify({ liked })
-      });
+      }, validateLike);
     },
 
     deleteOwn(commentId: string): Promise<unknown> {

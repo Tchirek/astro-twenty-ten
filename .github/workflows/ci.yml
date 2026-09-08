@@ -34,4 +34,5 @@ jobs:
       - run: npm run test:routes
       - run: npm run test:budget
       - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:component
       - run: npm run test:e2e

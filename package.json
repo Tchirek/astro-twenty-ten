@@ -20,7 +20,8 @@
     "test:budget": "node --test services/sicsic-comment-ui/test/bundle.test.mjs tests/bundle-budget.test.mjs",
     "test:e2e": "playwright test tests/modern.spec.ts",
     "test:visual": "playwright test tests/visual.spec.ts --project=chromium",
-    "test:visual:update": "playwright test tests/visual.spec.ts --project=chromium --update-snapshots"
+    "test:visual:update": "playwright test tests/visual.spec.ts --project=chromium --update-snapshots",
+    "test:component": "npm --prefix services/sicsic-comment-ui run test:browser"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",

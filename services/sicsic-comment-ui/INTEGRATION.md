@@ -65,15 +65,16 @@ The existing iframe sandbox is `allow-scripts allow-same-origin allow-popups all
 
 From this package, run `npm run check`, `npm test`, `npm run build`, then `npm run test:budget`. The Blog repository additionally builds both products before its route, bundle, E2E and visual checks.
 
-`tests/passport-sso.spec.ts` in the Blog checkout exercises separate HTTPS origins
-with the real broker script and isolated, fake accounts. It checks cross-site
-continuation, shared logout, popup failures and rejected foreign messages; no
-production account is used. Deploy the backend before the new frame client, and
-keep the Blog's inline rollout gated separately.
+Run npm run test:browser in this package after building. The package-owned
+fixtures exercise isolated HTTPS origins for inline and iframe hosts, account
+continuity, Google PKCE, drafts, likes, public profiles and cancelled reads. They
+never use production accounts. Host repositories keep only host-specific checks;
+SicSic CI must independently reject regressions in the component. These mocks do
+not prove that a deployed backend implements the response contract.
 
 `npm run build` publishes an allowlisted corresponding-source archive. It includes `wrangler.example.toml`, not the private deployment configuration, credentials or local environment files. Copy the example to `wrangler.toml` and configure your own origins before deploying.
 
-CI fails above 12 KiB gzip for core + inline bootstrap, 4 KiB for Blog comment CSS, or 3 KiB for the frame adapter. The adapter budget excludes its shared core; both are measured from the emitted static graph. Passport and Markdown preview are independent dynamic chunks. Tests reject identity/frame code in the anonymous bundle. Whole-page copy changes must not update comment goldens.
+CI fails above 12 KiB gzip for core + inline bootstrap, 4 KiB for Blog comment CSS, or 3 KiB for the frame adapter. The adapter budget excludes its shared core; both are measured from the emitted static graph. Passport and Markdown are independent dynamic chunks. Nonempty comment lists load Markdown before rendering their bodies; the editor shell remains immediate. Tests reject identity/frame code in the anonymous bundle. Whole-page copy changes must not update comment goldens.
 
 - No OAuth/profile initialization, current-profile overlay, cross-site storage bridge or panel gestures in the reader's core path.
 - No attachment uploads, rich-text framework, React/Vue/Solid wrapper, design system or extra package boundaries without a concrete need.
@@ -83,3 +84,12 @@ CI fails above 12 KiB gzip for core + inline bootstrap, 4 KiB for Blog comment C
 See [THREAT_MODEL.md](THREAT_MODEL.md) for the remaining security and deployment boundaries.
 
 The account backend must expose GET /api/auth/profiles and POST /api/auth/profile and include authorId for verified comments. Public profile fields must respect their visibility settings. Password login accepts the original username (without @) or email, never the editable nickname.
+
+## 0.2.0 contract
+
+- Render comment content locally; html is an optional, ignored legacy field.
+- Invalid successful JSON and malformed comment/like/session/profile responses reject explicitly. Reads have a 15-second deadline and are cancelled on subject replacement or destroy. Writes have deadlines but are never automatically retried: a timeout does not prove the server rejected the operation.
+- First-party bearer credentials stay in memory after a successful cookie exchange; generic bearer-only integrations retain persistence. Failed migration preserves the legacy credential for retry.
+- External comment images require an explicit click unless hosted on the exact page/API/auth origin. Preview follows the same policy.
+- The inline composer status remains intentionally hidden. Failed publication preserves the draft; failed likes restore their last confirmed state. This release adds no status banner or intermediate account screen.
+- Product version comes from package.json at build time. Source changes and production deployment are separate operations.

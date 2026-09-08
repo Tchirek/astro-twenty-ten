@@ -7,7 +7,7 @@ const runtimeGlobals = { ...globals.browser, ...globals.node };
 
 export default [
   {
-    ignores: ['.astro/**', 'dist/**', 'node_modules/**', 'services/**/dist/**'],
+    ignores: ['.astro/**', 'dist/**', 'node_modules/**', 'services/sicsic-comment-ui/**'],
   },
   {
     ...js.configs.recommended,

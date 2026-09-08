@@ -85,3 +85,7 @@ v0.1.2 shows the account dialog before session lookup completes, with a 200 ms l
 v0.1.3 removes the intermediate status card and timer. The complete login form or known account appears immediately; session restoration stays in the background and preserves active input.
 
 v0.1.4 preserves the historical @handle placement, distinguishes editable nicknames from login identifiers, and updates likes immediately without rebuilding or reordering comments. Consecutive clicks are coalesced into serialized writes; failed writes restore the confirmed state.
+
+## 0.2.0 — 2026-09-08 (source only)
+
+Render untrusted comment Markdown locally, defer external images until clicked, reject malformed API responses, cancel replaced reads, and keep first-party bearer sessions in memory after successful cookie restoration. Preserve historical account presentation and intentionally hidden inline errors. Browser regression tests now belong to this package and gate its CI. Version metadata is injected at build time. No production deployment accompanies this source update.
