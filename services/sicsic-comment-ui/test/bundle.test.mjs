@@ -35,7 +35,7 @@ test('anonymous core and frame adapter stay separate and within gzip budgets', a
 test('corresponding-source archive excludes private deployment files', () => {
   const archive = fileURLToPath(new URL('sicsic-comment-ui-source.tar.gz', dist));
   const entries = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8' }).trim().split(/\r?\n/);
-  const allowed = new Set(['src', 'test', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'LICENSE', 'NOTICE', 'INTEGRATION.md', 'MODIFICATIONS.md', 'THREAT_MODEL.md', '.env.example', 'wrangler.example.toml']);
+  const allowed = new Set(['src', 'test', 'index.html', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'playwright.config.ts', 'LICENSE', 'NOTICE', 'INTEGRATION.md', 'MODIFICATIONS.md', 'THREAT_MODEL.md', '.env.example', 'wrangler.example.toml']);
   for (const entry of entries) {
     assert.ok(allowed.has(entry.split('/')[0]), `Unexpected archive entry: ${entry}`);
     assert.doesNotMatch(entry, /(^|\/)(\.git|\.wrangler|node_modules|\.dev\.vars|\.env(?!\.example$)|wrangler\.toml|\.\.)($|[./])/);

@@ -1,27 +1,28 @@
 # SicSic trust model
 
-## Inline changes the trust boundary
+## Comment content is untrusted
 
-Blog no longer isolates comments in another origin. Comment HTML now lives in the
-Blog document. `item.html` is accepted **only from the trusted comment API**, whose
-recorded Worker renders Markdown with raw HTML disabled and rejects non-HTTPS
-images. Nicknames and profile text use `textContent`; profile website navigation
-accepts only parsed HTTP(S) URLs. Markdown preview keeps the existing safe renderer.
+Inline and iframe comments render the API's Markdown content with the same local
+micromark renderer as preview, with raw HTML disabled and URL protocol checks.
+The legacy HTML field is ignored. Runtime response guards validate shape, not HTML
+safety. Profile strings use textContent and navigation URLs have protocol checks.
+Renderer dependencies and host CSP still matter; this is not a claim of immunity
+to XSS or a compromised JavaScript delivery origin.
 
-Before rollout, verify the deployed renderer and existing stored HTML, not just
-new submissions. A malicious or compromised API response could execute in the
-host origin: CORS and TypeScript types do not sanitize it. There is deliberately
-no second handwritten sanitizer that disagrees with the server. Backend controls,
-dependency updates and an appropriate host CSP remain part of the release review.
+HTTPS comment images on the exact page, comment API or auth API origin load normally.
+Other images have a per-image click-to-load control and make no image request until
+clicked. Images use no-referrer, but their servers still see network metadata when
+loaded. This policy does not proxy images or hide the reader's IP.
 
 ## Identity-on-demand is not an XSS cure
 
-Passport still uses the existing persistent bearer-session protocol. Its token is
-stored in `localStorage` after login; moving the module off the reader path does
-not make a previously saved token unreadable to other same-origin JavaScript.
-An XSS on the executing origin could steal it. Presets sharing the comment origin
-and auth backend share that blast radius. Blog storage remains a separate origin;
-identical storage keys never make different origins share storage.
+First-party Passport keeps its bearer in memory and restores it on deliberate
+identity actions using the central HttpOnly cookie. A successful exchange removes
+legacy persistent bearer keys; a failed exchange leaves the legacy token intact
+for retry. Generic bearer-only integrations retain their existing persistence.
+HttpOnly reduces direct cookie theft; an active same-origin XSS could still call
+the session API or perform authenticated actions. Identity-on-demand is not an
+XSS cure. Nothing creates an identity request merely to read comments.
 
 An explicit identity action restores the account with a credentialed JSON POST
 to /api/auth/sso/session. The host-only __Host-sicsic-session cookie remains

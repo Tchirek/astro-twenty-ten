@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { registerHooks } from 'node:module';
+registerHooks({ resolve(specifier, context, nextResolve) {
+  return nextResolve(specifier.startsWith('./') && !specifier.endsWith('.ts') && context.parentURL?.includes('/src/') ? specifier + '.ts' : specifier, context);
+} });
+const user = { id: 'reader', username: 'reader', displayName: 'Reader', email: null, avatar: null, bio: null, website: null, publicEmail: null,
+  emailVerified: false, hasPassword: true, googleLinked: false, showBio: false, badge: 'none', publicEmailMode: 'none' };
+
 
 test('Passport sends cookies for continuity and login but keeps Google verifiers out of URLs', async (t) => {
-  const resolver = registerHooks({ resolve(specifier, context, nextResolve) {
-    return nextResolve(specifier === './api' && context.parentURL?.endsWith('/passportApi.ts') ? './api.ts' : specifier, context);
-  } });
   const { createPassportApi } = await import('../src/passportApi.ts');
-  resolver.deregister();
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, init = {}) => {
     calls.push({ url, init });
-    return Response.json({});
+    return Response.json({ token: 'session', user });
   });
   const api = createPassportApi({ authOrigin: 'https://api.example.test', sessionBroker: true });
   await api.session('saved-session');
@@ -35,7 +37,7 @@ test('comment API creates a viewer only for anonymous mutations', async () => {
   const calls = [];
   globalThis.fetch = async (input, init = {}) => {
     calls.push({ url: String(input), init });
-    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ items: [], likedByMe: true, likeCount: 1 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
 
   let sessionToken = 'account-session';
@@ -96,4 +98,28 @@ test('comment API creates a viewer only for anonymous mutations', async () => {
   headers = new Headers(calls.at(-1).init.headers);
   assert.equal(headers.get('X-Viewer-Id'), 'session-viewer-123456');
   assert.equal(requireCalls, 2);
+});
+
+test('malformed JSON, comment shapes, likes and sessions fail explicitly', async (t) => {
+  const { createCommentApi } = await import('../src/api.ts');
+  const { createPassportApi } = await import('../src/passportApi.ts');
+  let body = '<html>not JSON</html>';
+  t.mock.method(globalThis, 'fetch', async () => new Response(body));
+  const api = createCommentApi({ apiOrigin: '' }, { peekSessionViewerId: () => '', requireSessionViewerId: () => 'fixture-viewer', sessionToken: () => '', adminToken: () => '' });
+  await assert.rejects(api.list('one'), /invalid_response/);
+  for (const invalid of [{}, { items: null }, { items: [{}] }, { items: [], commentedByMe: 'yes' }]) {
+    body = JSON.stringify(invalid);
+    await assert.rejects(api.list('one'), /invalid_response/);
+  }
+  for (const invalid of [{ likedByMe: 'yes', likeCount: 1 }, { likedByMe: true, likeCount: -1 }, { likedByMe: false, likeCount: 0.5 }]) {
+    body = JSON.stringify(invalid);
+    await assert.rejects(api.setLike('one', true), /invalid_response/);
+  }
+  const passport = createPassportApi({ authOrigin: '', sessionBroker: true });
+  for (const invalid of [{}, { token: 'saved', user: null }, { token: 'saved', user: {} }]) {
+    body = JSON.stringify(invalid);
+    await assert.rejects(passport.session(), /invalid_response/);
+  }
+  body = JSON.stringify({ profiles: { reader: { displayName: 'Reader', email: true } } });
+  await assert.rejects(passport.profiles(['reader']), /invalid_response/);
 });

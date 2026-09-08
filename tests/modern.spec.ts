@@ -1,9 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import type { CommentController } from '../services/sicsic-comment-ui/src/core';
 import type { CommentItem } from '../services/sicsic-comment-ui/src/types';
-import { mockEmptySessionBroker } from './fixtures/passport-broker';
+import { mockEmptySessionBroker } from '../services/sicsic-comment-ui/test/browser/fixtures/passport-broker';
 
 const articlePath = '/2026/08/23/twenty-ten-on-astro/';
 const commentsOrigin = 'https://comments.sicnu.pics.tchirek.top';
@@ -109,56 +108,6 @@ test('SicSic reveals the editor while the first comment request is pending', asy
   await expect(comments.getByLabel('留言內容')).toBeEditable();
 
   releaseList();
-});
-
-test('inline core ignores stale subjects and late responses after destroy', async ({ page }) => {
-  await mockBuiltCommentUi(page);
-  let releaseFirst!: () => void;
-  let releaseLast!: () => void;
-  const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
-  const lastGate = new Promise<void>((resolve) => { releaseLast = resolve; });
-  const subjects: string[] = [];
-  await page.route('https://api.pics.tchirek.top/api/comment?**', async (route) => {
-    const subject = new URL(route.request().url()).searchParams.get('imageId')!;
-    subjects.push(subject);
-    if (subject === 'first') await firstGate;
-    if (subject === 'last') await lastGate;
-    await route.fulfill({
-      headers: { 'Access-Control-Allow-Origin': hostOrigin, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: [{
-        id: subject, rootId: subject, parentId: null, imageId: subject,
-        nickname: 'Fixture', content: subject, html: `<p>${subject}</p>`,
-        createdAt: 1, likeCount: 0, likedByMe: false,
-      }] }),
-    });
-  });
-  const manifest = JSON.parse(await readFile(join(commentsDist, '.vite/manifest.json'), 'utf8'));
-  await page.goto('/');
-  await page.evaluate(async (url) => {
-    const { init } = await import(url);
-    const el = document.createElement('section');
-    el.id = 'lifecycle-comments';
-    document.body.append(el);
-    Reflect.set(window, '__commentsController', init({ el: '#lifecycle-comments', serverURL: 'https://api.pics.tchirek.top', subject: 'first' }));
-  }, `${commentsOrigin}/${manifest['src/core.ts'].file}`);
-  await expect.poll(() => subjects).toContain('first');
-  await page.evaluate(() => (Reflect.get(window, '__commentsController') as CommentController).update({ subject: 'second' }));
-  releaseFirst();
-  await expect(page.locator('#lifecycle-comments .comment .markdown')).toHaveText('second');
-  const lastResponse = page.waitForResponse((response) => new URL(response.url()).searchParams.get('imageId') === 'last');
-  await page.evaluate(() => (Reflect.get(window, '__commentsController') as CommentController).update({ subject: 'last' }));
-  await expect.poll(() => subjects).toContain('last');
-  await page.evaluate(() => {
-    const comments = Reflect.get(window, '__commentsController') as CommentController;
-    comments.destroy();
-    comments.destroy();
-    comments.update({ subject: 'ignored' });
-  });
-  releaseLast();
-  await (await lastResponse).finished();
-  await page.evaluate(() => new Promise(requestAnimationFrame));
-  await expect(page.locator('#lifecycle-comments')).toBeEmpty();
-  expect(subjects).toEqual(['first', 'second', 'last']);
 });
 
 test('responsive header keeps downstream layout stable within height bands', async ({ page }) => {

@@ -50,7 +50,6 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     comments: [],
     loadedImageId: '',
     loading: false,
-    loadAgain: false,
     loadError: '',
     previewing: false
   };
@@ -61,6 +60,8 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     desired: boolean;
   };
   const pendingLikes = new Map<string, PendingLike>();
+  let loadController: AbortController | null = null;
+  let renderMarkdown: typeof import('./markdown').renderSafeMarkdown | undefined;
   let editingId = '';
   let destroyed = false;
   let fallbackViewerId = '';
@@ -132,7 +133,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
       markdownPromise ||= import('./markdown');
       const { renderSafeMarkdown } = await markdownPromise;
       if (!destroyed && state.previewing && value === elements.textarea.value) {
-        elements.preview.innerHTML = renderSafeMarkdown(value, config.locale);
+        elements.preview.innerHTML = renderSafeMarkdown(value, config.locale, [config.apiOrigin, config.authOrigin]);
       }
     } catch {
       markdownPromise = null;
@@ -219,7 +220,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
       elements.nickname.hidden = false;
       elements.composerIdentity.hidden = true;
       elements.accountButton.classList.remove('signed-in');
-      if (accountLabel) accountLabel.textContent = config.locale === 'zh-TW' ? '登入' : '';
+      if (accountLabel) accountLabel.textContent = config.integration === 'inline' ? (config.locale === 'zh-TW' ? '登入' : '登录') : '';
     }
     editingId = '';
     render();
@@ -248,6 +249,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
       editingId,
       locale: config.locale,
       rootOrder: config.rootOrder,
+      renderMarkdown: renderMarkdown ? content => renderMarkdown!(content, config.locale, [config.apiOrigin, config.authOrigin]) : undefined,
       showSkeleton: config.integration === 'frame',
       onShowProfile: (item) => void ensurePassport().then((value) => value?.openProfile(item)),
       onReply: setReplyTarget,
@@ -268,18 +270,21 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
 
   async function load(): Promise<void> {
     if (!state.imageId || destroyed) return;
-    if (state.loading) {
-      state.loadAgain = true;
-      return;
-    }
+    loadController?.abort();
+    const controller = new AbortController();
+    loadController = controller;
     state.loading = true;
     state.loadError = '';
     const requestedImageId = state.imageId;
     elements.status.textContent = '';
     if (config.integration === 'frame') render();
     try {
-      const response = await api.list(requestedImageId);
-      if (destroyed || requestedImageId !== state.imageId) return;
+      const response = await api.list(requestedImageId, controller.signal);
+      if (response.items.length) {
+        markdownPromise ||= import('./markdown');
+        renderMarkdown = (await markdownPromise).renderSafeMarkdown;
+      }
+      if (destroyed || controller !== loadController) return;
       state.comments = response.items;
       for (const item of state.comments) {
         const pending = pendingLikes.get(item.id);
@@ -295,17 +300,16 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
         commentedByMe: Boolean(response.commentedByMe) || hasLocalCommentedImage(requestedImageId)
       });
     } catch (error) {
-      if (requestedImageId === state.imageId) {
-        state.loadError = error instanceof Error ? error.message : (config.locale === 'zh-TW' ? '載入失敗' : '加载失败');
-        state.loadedImageId = requestedImageId;
-      }
+      if (destroyed || controller !== loadController || controller.signal.aborted) return;
+      markdownPromise = null;
+      state.loadError = error instanceof Error ? error.message : 'request_failed';
+      state.loadedImageId = requestedImageId;
       elements.status.textContent = state.loadError;
     } finally {
-      state.loading = false;
-      render();
-      if (state.loadAgain) {
-        state.loadAgain = false;
-        void load();
+      if (!destroyed && controller === loadController) {
+        state.loading = false;
+        loadController = null;
+        render();
       }
     }
   }
@@ -445,6 +449,9 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
   }
 
   function resetForImage(imageId: string): void {
+    loadController?.abort();
+    loadController = null;
+    state.loading = false;
     state.imageId = imageId;
     state.replyTo = null;
     state.comments = [];
@@ -485,6 +492,15 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     }
   };
   document.addEventListener('click', closeComposerOptions);
+  elements.app.addEventListener('click', event => {
+    const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('button[data-comment-image]') : null;
+    if (!button || !elements.app.contains(button)) return;
+    const image = document.createElement('img');
+    image.referrerPolicy = 'no-referrer';
+    image.alt = button.dataset.alt || '';
+    image.src = button.dataset.commentImage!;
+    button.replaceWith(image);
+  });
   elements.closeButton.addEventListener('click', () => hooks.onClose?.());
   elements.replyTarget.addEventListener('click', () => setReplyTarget(null));
   elements.previewToggle.addEventListener('click', () => setPreview(!state.previewing));
@@ -566,6 +582,7 @@ export function init(options: CommentInitOptions, hooks: CommentHooks = {}): Com
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      loadController?.abort();
       document.removeEventListener('click', closeComposerOptions);
       passport?.destroy();
       appRoot.replaceChildren();

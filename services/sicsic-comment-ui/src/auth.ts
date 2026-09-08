@@ -120,8 +120,10 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
     if (legacy) {
       token = legacy;
       try {
-        localStorage.setItem(config.sessionStorageKey, legacy);
-        localStorage.removeItem(config.legacySessionStorageKey);
+        if (!config.sessionBroker) {
+          localStorage.setItem(config.sessionStorageKey, legacy);
+          localStorage.removeItem(config.legacySessionStorageKey);
+        }
       } catch {
         /* storage full/blocked — keep the in-memory token */
       }
@@ -143,8 +145,9 @@ export function createAuth({ config, api, modal, onChange }: AuthOptions) {
   function persist(next: string): void {
     token = next;
     try {
-      if (next) localStorage.setItem(config.sessionStorageKey, next);
+      if (next && !config.sessionBroker) localStorage.setItem(config.sessionStorageKey, next);
       else localStorage.removeItem(config.sessionStorageKey);
+      if (config.sessionBroker && config.legacySessionStorageKey) localStorage.removeItem(config.legacySessionStorageKey);
     } catch {
       /* storage full/blocked (e.g. private mode) — the in-memory token still
        * drives this session; it just won't persist across reloads. */

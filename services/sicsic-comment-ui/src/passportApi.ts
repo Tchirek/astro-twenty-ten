@@ -1,4 +1,4 @@
-import { ApiError } from './api';
+import { readResponse, record, requireShape } from './response';
 import type { PassportConfig } from './config';
 import type { AccountUser, BadgeKind, PublicProfile } from './types';
 
@@ -6,14 +6,20 @@ function joinUrl(origin: string, path: string): string {
   return origin ? `${origin}${path}` : path;
 }
 
-async function parseJson<T>(response: Response): Promise<T & { error?: string; retryAfterMs?: number }> {
-  const text = await response.text();
-  if (!text) return {} as T & { error?: string; retryAfterMs?: number };
-  try {
-    return JSON.parse(text) as T & { error?: string; retryAfterMs?: number };
-  } catch {
-    return {} as T & { error?: string; retryAfterMs?: number };
-  }
+function validateUser(value: unknown): void {
+  requireShape(record(value));
+  for (const key of ['id', 'displayName']) requireShape(typeof value[key] === 'string' && Boolean(value[key]));
+  for (const key of ['username', 'email', 'avatar', 'bio', 'website', 'publicEmail']) requireShape(value[key] === null || typeof value[key] === 'string');
+  for (const key of ['emailVerified', 'hasPassword', 'googleLinked', 'showBio']) requireShape(typeof value[key] === 'boolean');
+  requireShape(['none', 'cockade', 'seal'].includes(String(value.badge)));
+  requireShape(['none', 'login', 'custom'].includes(String(value.publicEmailMode)));
+}
+
+function validateSession(body: Record<string, unknown>, allowAnonymous = false): void {
+  requireShape(typeof body.token === 'string');
+  if (allowAnonymous && body.user === null) { requireShape(body.token === ''); return; }
+  requireShape(Boolean(body.token));
+  validateUser(body.user);
 }
 
 export function createPassportApi(config: PassportConfig) {
@@ -23,10 +29,20 @@ export function createPassportApi(config: PassportConfig) {
   });
 
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response = await fetch(joinUrl(config.authOrigin, path), init);
-    const body = await parseJson<T>(response);
-    if (!response.ok) throw new ApiError(body.error || `request_${response.status}`, body.retryAfterMs);
-    return body;
+    const response = await fetch(joinUrl(config.authOrigin, path), { ...init, signal: init.signal || AbortSignal.timeout(15000) });
+    const body = await readResponse(response);
+    if (path === '/api/auth/sso/session') validateSession(body, true);
+    else if (['/api/auth/login', '/api/auth/register/verify', '/api/auth/reset/verify'].includes(path)) validateSession(body);
+    else if (['/api/auth/me', '/api/auth/profile', '/api/auth/email/verify'].includes(path)) validateUser(body.user);
+    else if (path.startsWith('/api/auth/profiles?')) {
+      requireShape(record(body.profiles));
+      for (const value of Object.values(body.profiles)) {
+        requireShape(record(value) && typeof value.displayName === 'string');
+        for (const key of ['username', 'avatar', 'bio', 'website', 'email']) requireShape(value[key] === null || typeof value[key] === 'string');
+        requireShape(['none', 'cockade', 'seal'].includes(String(value.badge)));
+      }
+    }
+    return body as T;
   }
 
   return {
@@ -130,12 +146,12 @@ export function createPassportApi(config: PassportConfig) {
     async googleResult(state: string, codeVerifier: string): Promise<{ pending?: boolean; token?: string; user?: AccountUser; error?: string }> {
       const response = await fetch(joinUrl(config.authOrigin, '/api/auth/google/result'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state, codeVerifier }), credentials: 'omit', cache: 'no-store',
+        body: JSON.stringify({ state, codeVerifier }), credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(8000),
       });
-      const body = await parseJson<{ pending?: boolean; token?: string; user?: AccountUser; error?: string }>(response);
-      if (response.status === 202) return body;
-      if (!response.ok) throw new ApiError(body.error || `request_${response.status}`, body.retryAfterMs);
-      return body;
+      const body = await readResponse(response);
+      if (response.status === 202) { requireShape(body.pending === true); return { pending: true }; }
+      validateSession(body);
+      return body as { token: string; user: AccountUser };
     }
   };
 }

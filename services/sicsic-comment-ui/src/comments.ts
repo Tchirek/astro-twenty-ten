@@ -14,6 +14,7 @@ interface CommentRenderOptions {
   locale: CommentLocale;
   rootOrder: CommentRootOrder;
   showSkeleton: boolean;
+  renderMarkdown?: (content: string) => string;
   onReply: (item: CommentItem) => void;
   onLike: (item: CommentItem) => void;
   onDelete: (item: CommentItem) => void;
@@ -196,7 +197,8 @@ function createCommentNode(
   // Contract: item.html is the ONLY trusted boundary's output. The backend renders
   // Markdown with raw HTML disabled and rejects non-https image URLs (see the worker's
   // comments route). The client never sanitizes server HTML and must not relax this.
-  body.innerHTML = item.html;
+  // Network HTML is never inserted into the host document.
+  body.innerHTML = options.renderMarkdown?.(item.content) || '';
 
   const actions = document.createElement('div');
   actions.className = 'comment-actions';
